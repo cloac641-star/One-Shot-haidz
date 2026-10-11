@@ -20,14 +20,16 @@ MagicRate=8,FireRateBoost=false,
 EspOn=false,EspBox=true,EspBoxMode="Đầy Đủ",EspName=true,EspDist=true,EspHP=true,
 EspTracer=false,EspSkel=false,EspChams=false,EspArrow=false,
 EspPos="Trên",EspCol=Color3.fromRGB(0,200,255),EspRainbow=false,EspMax=1500,
-SpeedOn=false,SpeedVal=32,JumpOn=false,JumpVal=80,InfJump=false,Bunny=false,
-FlyOn=false,FlySpd=80,Noclip=false,AntiVoid=false,
+SpeedOn=false,SpeedVal=32,SpeedMode="Velocity",
+JumpOn=false,JumpVal=80,InfJump=false,Bunny=false,
+FlyOn=false,FlySpd=80,FlyMode="CFrame",
+Noclip=false,AntiVoid=false,
 FOVChg=false,FOVVal=90,FullBright=false,NoFog=false,RainbowChar=false,
-WMOn=true,Notify=true,CurTarget=nil,HookedMode=false,RainbowTheme=false}
-local CFG="oneshot_v14.json"
+WMOn=true,Notify=true,CurTarget=nil,HookedMode=false,RainbowTheme=false,
+Debug=false}
+local CFG="oneshot_v15.json"
 local conns={}
 
---===== THEME =====
 local T={
 bg=Color3.fromRGB(10,12,18),
 card=Color3.fromRGB(20,24,34),
@@ -191,7 +193,7 @@ local function applyWeaponMods(on)
     end
 end
 local Gui=Instance.new("ScreenGui")
-Gui.Name="OneShotV14"
+Gui.Name="OneShotV15"
 Gui.ResetOnSpawn=false
 Gui.ZIndexBehavior=Enum.ZIndexBehavior.Sibling
 Gui.IgnoreGuiInset=true
@@ -211,7 +213,6 @@ local function tween(o,t,props)
     Tween:Create(o,TweenInfo.new(t,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),props):Play()
 end
 
---===== MAIN WINDOW =====
 local Main=Instance.new("Frame")
 Main.Size=UDim2.new(0,620,0,440)
 Main.Position=UDim2.new(0.5,-310,0.5,-220)
@@ -229,7 +230,6 @@ local MainGrad=Instance.new("UIGradient",Main)
 MainGrad.Rotation=45
 MainGrad.Color=ColorSequence.new(T.accent,T.accent2)
 
---===== HEADER =====
 local Header=Instance.new("Frame")
 Header.Size=UDim2.new(1,0,0,44)
 Header.BackgroundColor3=T.card
@@ -255,7 +255,7 @@ local Logo=Instance.new("TextLabel")
 Logo.Size=UDim2.new(0,220,1,0)
 Logo.Position=UDim2.new(0,16,0,0)
 Logo.BackgroundTransparency=1
-Logo.Text="⚡ ONE SHOT  v14"
+Logo.Text="ONE SHOT  v15"
 Logo.TextColor3=T.text
 Logo.Font=Enum.Font.GothamBold
 Logo.TextSize=16
@@ -273,7 +273,6 @@ Version.TextSize=11
 Version.TextXAlignment=Enum.TextXAlignment.Left
 Version.Parent=Header
 
--- Search bar
 local SearchFrame=Instance.new("Frame")
 SearchFrame.Size=UDim2.new(0,150,0,26)
 SearchFrame.Position=UDim2.new(1,-260,0.5,-13)
@@ -283,17 +282,9 @@ SearchFrame.Parent=Header
 Instance.new("UICorner",SearchFrame).CornerRadius=UDim.new(0,13)
 local SearchStroke=Instance.new("UIStroke",SearchFrame)
 SearchStroke.Color=T.accent SearchStroke.Thickness=1 SearchStroke.Transparency=0.6
-local SearchIcon=Instance.new("TextLabel")
-SearchIcon.Size=UDim2.new(0,24,1,0)
-SearchIcon.Position=UDim2.new(0,6,0,0)
-SearchIcon.BackgroundTransparency=1
-SearchIcon.Text="🔍"
-SearchIcon.TextColor3=T.textSub
-SearchIcon.Font=Enum.Font.Gotham SearchIcon.TextSize=12
-SearchIcon.Parent=SearchFrame
 local SearchBox=Instance.new("TextBox")
-SearchBox.Size=UDim2.new(1,-32,1,0)
-SearchBox.Position=UDim2.new(0,28,0,0)
+SearchBox.Size=UDim2.new(1,-16,1,0)
+SearchBox.Position=UDim2.new(0,8,0,0)
 SearchBox.BackgroundTransparency=1
 SearchBox.Text=""
 SearchBox.PlaceholderText="Tìm tính năng..."
@@ -305,7 +296,6 @@ SearchBox.TextXAlignment=Enum.TextXAlignment.Left
 SearchBox.ClearTextOnFocus=false
 SearchBox.Parent=SearchFrame
 
--- Close / Minimize
 local function hBtn(txt,xOff,cb,col)
     local b=Instance.new("TextButton")
     b.Size=UDim2.new(0,26,0,26)
@@ -330,7 +320,6 @@ hBtn("−",-66,function()
 end)
 hBtn("×",-36,function() unload() end, T.danger)
 
--- Drag
 local dragging=false local dStart,sPos
 Header.InputBegan:Connect(function(i)
     if isPress(i) then
@@ -348,7 +337,6 @@ UIS.InputEnded:Connect(function(i)
     if isPress(i) then dragging=false end
 end)
 
---===== HANDLE MINI =====
 local Handle=Instance.new("Frame")
 Handle.Size=UDim2.new(0,200,0,38)
 Handle.Position=UDim2.new(0.5,-100,0,6)
@@ -365,7 +353,7 @@ local HG=Instance.new("UIGradient",Handle)
 HG.Color=ColorSequence.new(T.accent,T.accent2)
 local HLbl=Instance.new("TextLabel")
 HLbl.Size=UDim2.new(1,0,1,0) HLbl.BackgroundTransparency=1
-HLbl.Text="⚡ ONE SHOT v14  ▼" HLbl.TextColor3=T.text
+HLbl.Text="ONE SHOT v15  ▼" HLbl.TextColor3=T.text
 HLbl.Font=Enum.Font.GothamBold HLbl.TextSize=13 HLbl.Parent=Handle
 
 local hDrag=false local hStart,hPos,hMoved
@@ -392,7 +380,6 @@ UIS.InputEnded:Connect(function(i)
     end
 end)
 
---===== SIDEBAR =====
 local Sidebar=Instance.new("Frame")
 Sidebar.Size=UDim2.new(0,140,1,-92)
 Sidebar.Position=UDim2.new(0,0,0,44)
@@ -401,14 +388,12 @@ Sidebar.BackgroundTransparency=0.3
 Sidebar.BorderSizePixel=0
 Sidebar.Parent=Main
 
---===== CONTENT AREA =====
 local Content=Instance.new("Frame")
 Content.Size=UDim2.new(1,-150,1,-100)
 Content.Position=UDim2.new(0,144,0,50)
 Content.BackgroundTransparency=1
 Content.Parent=Main
 
---===== FOOTER =====
 local Footer=Instance.new("Frame")
 Footer.Size=UDim2.new(1,0,0,22)
 Footer.Position=UDim2.new(0,0,1,-22)
@@ -426,7 +411,7 @@ FFooterFix.BorderSizePixel=0
 local FooterText=Instance.new("TextLabel")
 FooterText.Size=UDim2.new(1,0,1,0)
 FooterText.BackgroundTransparency=1
-FooterText.Text="FPS: -- | Ping: -- | Hook: OFF | v14"
+FooterText.Text="FPS: -- | Ping: -- | Hook: OFF | v15"
 FooterText.TextColor3=T.textSub
 FooterText.Font=Enum.Font.Gotham
 FooterText.TextSize=11
@@ -452,8 +437,8 @@ local function selPage(n)
     for k,v in pairs(Pages) do v.Visible=(k==n) end
 end
 local tabs={}
-local tabIcons={Ngắm="🎯",ESP="👁",["Di Chuyển"]="🏃",
-    ["Chiến Đấu"]="🔫",["Hiển Thị"]="🎨",["Cấu Hình"]="⚙"}
+local tabIcons={Ngắm="[A]",ESP="[E]",["Di Chuyển"]="[M]",
+    ["Chiến Đấu"]="[C]",["Hiển Thị"]="[V]",["Cấu Hình"]="[S]"}
 local function mkTab(n,o)
     local b=Instance.new("TextButton")
     b.Size=UDim2.new(1,-16,0,44)
@@ -477,7 +462,7 @@ local function mkTab(n,o)
     ico.BackgroundTransparency=1
     ico.Text=tabIcons[n] or "•"
     ico.TextColor3=T.text
-    ico.Font=Enum.Font.GothamBold ico.TextSize=18
+    ico.Font=Enum.Font.GothamBold ico.TextSize=14
     ico.TextXAlignment=Enum.TextXAlignment.Left
     local lbl=Instance.new("TextLabel",b)
     lbl.Size=UDim2.new(1,-46,1,0) lbl.Position=UDim2.new(0,42,0,0)
@@ -501,14 +486,10 @@ local function mkTab(n,o)
         end
     end
     b.MouseEnter:Connect(function()
-        if not b:GetAttribute("active") then
-            b.BackgroundTransparency=0.6
-        end
+        if not b:GetAttribute("active") then b.BackgroundTransparency=0.6 end
     end)
     b.MouseLeave:Connect(function()
-        if not b:GetAttribute("active") then
-            b.BackgroundTransparency=1
-        end
+        if not b:GetAttribute("active") then b.BackgroundTransparency=1 end
     end)
     b.MouseButton1Click:Connect(function()
         selPage(n)
@@ -523,7 +504,7 @@ local function mkTab(n,o)
     newPage(n)
     return b
 end
-local function sec(pg,t,icon)
+local function sec(pg,t)
     local f=Instance.new("Frame")
     f.Size=UDim2.new(1,0,0,34)
     f.BackgroundTransparency=1
@@ -531,14 +512,13 @@ local function sec(pg,t,icon)
     local l=Instance.new("TextLabel")
     l.Size=UDim2.new(1,0,1,0)
     l.BackgroundTransparency=1
-    l.Text=(icon or "▬").."  "..t
+    l.Text="▬  "..t
     l.TextColor3=T.accent
     l.Font=Enum.Font.GothamBold l.TextSize=13
     l.TextXAlignment=Enum.TextXAlignment.Left
     l.Parent=f
 end
 
---===== TOGGLE (FF style pill) =====
 local function tgl(pg,t,d,cb)
     local card=Instance.new("Frame")
     card.Size=UDim2.new(1,-4,0,36)
@@ -555,7 +535,7 @@ local function tgl(pg,t,d,cb)
     lbl.Text=t
     lbl.TextColor3=T.text
     lbl.Font=Enum.Font.Gotham
-    lbl.Font=Enum.Font.Gotham lbl.TextSize=13
+    lbl.TextSize=13
     lbl.TextXAlignment=Enum.TextXAlignment.Left
     local track=Instance.new("Frame",card)
     track.Size=UDim2.new(0,44,0,22)
@@ -599,7 +579,6 @@ local function tgl(pg,t,d,cb)
     return card
 end
 
---===== SLIDER =====
 local function sld(pg,t,mn,mx,d,cb)
     local card=Instance.new("Frame")
     card.Size=UDim2.new(1,-4,0,52)
@@ -666,7 +645,6 @@ local function sld(pg,t,mn,mx,d,cb)
     return card
 end
 
---===== DROPDOWN =====
 local function drp(pg,t,opts,d,cb)
     local card=Instance.new("Frame")
     card.Size=UDim2.new(1,-4,0,36)
@@ -733,7 +711,6 @@ local function drp(pg,t,opts,d,cb)
     return card
 end
 
---===== KEYBIND =====
 local function kb(pg,t,d,cb)
     local card=Instance.new("Frame")
     card.Size=UDim2.new(1,-4,0,36)
@@ -774,7 +751,6 @@ local function kb(pg,t,d,cb)
     return card
 end
 
---===== BUTTON =====
 local function mkBtn(pg,t,cb)
     local b=Instance.new("TextButton")
     b.Size=UDim2.new(1,-4,0,36)
@@ -797,7 +773,6 @@ local function mkBtn(pg,t,cb)
     b.MouseButton1Click:Connect(cb)
     return b
 end
---===== TOAST =====
 local toastHolder=Instance.new("Frame")
 toastHolder.Size=UDim2.new(0,300,1,0)
 toastHolder.Position=UDim2.new(1,-320,0,20)
@@ -846,7 +821,6 @@ local function toast(title,text,kind)
     tx.TextColor3=T.textSub
     tx.Font=Enum.Font.Gotham tx.TextSize=11
     tx.TextXAlignment=Enum.TextXAlignment.Left
-    -- Slide in
     f.Position=UDim2.new(1,0,0,0)
     tween(f,0.3,{Position=UDim2.new(0,0,0,0)})
     task.delay(2.5,function()
@@ -856,16 +830,14 @@ local function toast(title,text,kind)
     end)
 end
 
---===== TABS =====
 mkTab("Ngắm",1) mkTab("ESP",2) mkTab("Di Chuyển",3)
 mkTab("Chiến Đấu",4) mkTab("Hiển Thị",5) mkTab("Cấu Hình",6)
 selPage("Ngắm")
 tabs[1].bg:SetAttribute("active",true)
 tabs[1].setActive(true)
 
---===== TAB NGẮM =====
 local AP=Pages["Ngắm"]
-sec(AP,"NGẮM TỰ ĐỘNG","🎯")
+sec(AP,"NGẮM TỰ ĐỘNG")
 tgl(AP,"Bật Ngắm",false,function(v) S.AimOn=v end)
 kb(AP,"Phím Ngắm",Enum.KeyCode.E,function(k) S.AimKey=k end)
 drp(AP,"Chế Độ",{"Giữ","Bật Tắt"},"Giữ",function(v) S.AimMode=v end)
@@ -876,11 +848,11 @@ sld(AP,"Phạm Vi Ngắm",20,600,150,function(v) S.AimFOV=v end)
 tgl(AP,"Bỏ Qua Đồng Đội",false,function(v) S.TeamCheck=v end)
 tgl(AP,"Kiểm Tra Tường",true,function(v) S.WallCheck=v end)
 sld(AP,"Dự Đoán x100",0,50,0,function(v) S.Predict=v end)
-sec(AP,"NÂNG CAO","⚡")
+sec(AP,"NÂNG CAO")
 tgl(AP,"Khóa Khi Bắn",true,function(v) S.SnapShoot=v end)
 sld(AP,"Thời Gian Khóa x10ms",5,50,12,function(v) S.SnapDur=v end)
 tgl(AP,"Âm Trúng Đích",false,function(v) S.HitSound=v end)
-sec(AP,"VÒNG NGẮM","⭕")
+sec(AP,"VÒNG NGẮM")
 tgl(AP,"Hiện Vòng Ngắm",true,function(v) S.ShowFOV=v end)
 tgl(AP,"Cầu Vồng",false,function(v) S.FOVRainbow=v end)
 
@@ -888,34 +860,37 @@ local Fov=Drawing.new("Circle")
 Fov.Thickness=1.5 Fov.NumSides=64 Fov.Transparency=1
 Fov.Filled=false Fov.Visible=false
 
---===== TAB ESP =====
 local EP=Pages["ESP"]
-sec(EP,"BẬT ESP","👁")
+sec(EP,"BẬT ESP")
 tgl(EP,"Bật ESP",false,function(v) S.EspOn=v end)
 tgl(EP,"Khung Box",true,function(v) S.EspBox=v end)
 drp(EP,"Kiểu Box",{"Đầy Đủ","4 Góc"},"Đầy Đủ",function(v) S.EspBoxMode=v end)
 tgl(EP,"Tên",true,function(v) S.EspName=v end)
 tgl(EP,"Khoảng Cách",true,function(v) S.EspDist=v end)
 tgl(EP,"Thanh Máu",true,function(v) S.EspHP=v end)
-sec(EP,"CHI TIẾT","🔍")
+sec(EP,"CHI TIẾT")
 tgl(EP,"Xương Skeleton",false,function(v) S.EspSkel=v end)
 tgl(EP,"Đường Chỉ Tracer",false,function(v) S.EspTracer=v end)
 tgl(EP,"Viền Sáng Chams",false,function(v) S.EspChams=v end)
 tgl(EP,"Mũi Tên Off-screen",false,function(v) S.EspArrow=v end)
-sec(EP,"KIỂU","🎨")
+sec(EP,"KIỂU")
 drp(EP,"Vị Trí Text",{"Trên","Giữa","Dưới"},"Trên",function(v) S.EspPos=v end)
 tgl(EP,"Màu Cầu Vồng",false,function(v) S.EspRainbow=v end)
 sld(EP,"Khoảng Cách Tối Đa",100,5000,1500,function(v) S.EspMax=v end)
 
---===== TAB DI CHUYỂN =====
 local MP=Pages["Di Chuyển"]
-sec(MP,"TỐC ĐỘ","🏃")
+sec(MP,"TỐC ĐỘ")
 tgl(MP,"Bật Tốc Độ",false,function(v)
     S.SpeedOn=v
-    if not v then local h=getHum() if h then h.WalkSpeed=16 end end
+    if not v then
+        local h=getHum() if h then h.WalkSpeed=16 end
+        if speedLV then speedLV:Destroy() speedLV=nil end
+        if speedAtt then speedAtt:Destroy() speedAtt=nil end
+    end
 end)
+drp(MP,"Kiểu Speed",{"Velocity","WalkSpeed"},"Velocity",function(v) S.SpeedMode=v end)
 sld(MP,"Giá Trị",16,300,32,function(v) S.SpeedVal=v end)
-sec(MP,"NHẢY","🦘")
+sec(MP,"NHẢY")
 tgl(MP,"Lực Nhảy",false,function(v)
     S.JumpOn=v
     local h=getHum()
@@ -924,22 +899,41 @@ end)
 sld(MP,"Giá Trị Nhảy",50,500,80,function(v) S.JumpVal=v end)
 tgl(MP,"Nhảy Vô Hạn",false,function(v) S.InfJump=v end)
 tgl(MP,"Nhảy Liên Tục",false,function(v) S.Bunny=v end)
-sec(MP,"BAY","✈")
+sec(MP,"BAY")
 tgl(MP,"Bật Bay",false,function(v) S.FlyOn=v end)
+drp(MP,"Kiểu Bay",{"CFrame","Velocity"},"CFrame",function(v)
+    S.FlyMode=v
+    if S.FlyOn then stopFly() task.wait(0.1) startFly() end
+end)
 sld(MP,"Tốc Độ Bay",10,500,80,function(v) S.FlySpd=v end)
-sec(MP,"KHÁC","⚙")
+sec(MP,"KHÁC")
 tgl(MP,"Xuyên Tường",false,function(v) S.Noclip=v end)
 tgl(MP,"Chống Rớt Map",false,function(v) S.AntiVoid=v end)
 
-local flyLV,flyAtt,flyConn
+local flyLV,flyAtt,flyConn,flyGyro
+local speedLV,speedAtt
 local FK={W=false,A=false,S=false,D=false,SP=false,CT=false}
 local function stopFly()
     if flyConn then flyConn:Disconnect() flyConn=nil end
     if flyLV then flyLV:Destroy() flyLV=nil end
     if flyAtt then flyAtt:Destroy() flyAtt=nil end
-    local h=getHum() if h then h.PlatformStand=false end
+    if flyGyro then flyGyro:Destroy() flyGyro=nil end
+    local h=getHum()
+    if h then h.PlatformStand=false h.WalkSpeed=16 end
 end
-local function startFly()
+local function getMoveVec()
+    local cam=Cam.CFrame
+    local mv=Vector3.zero
+    if FK.W then mv=mv+cam.LookVector end
+    if FK.S then mv=mv-cam.LookVector end
+    if FK.A then mv=mv-cam.RightVector end
+    if FK.D then mv=mv+cam.RightVector end
+    if FK.SP then mv=mv+Vector3.new(0,1,0) end
+    if FK.CT then mv=mv-Vector3.new(0,1,0) end
+    if mv.Magnitude>0 then mv=mv.Unit end
+    return mv
+end
+local function startFlyVelocity()
     local c=getChar()
     local hrp=c:WaitForChild("HumanoidRootPart",5)
     local hum=c:FindFirstChildOfClass("Humanoid")
@@ -951,25 +945,63 @@ local function startFly()
     flyLV.MaxForce=math.huge
     flyLV.VectorVelocity=Vector3.zero
     flyLV.Parent=hrp
+    flyGyro=Instance.new("AlignOrientation")
+    flyGyro.Mode=Enum.OrientationAlignmentMode.OneAttachment
+    flyGyro.Attachment0=flyAtt
+    flyGyro.MaxTorque=math.huge
+    flyGyro.Responsiveness=200
+    flyGyro.Parent=hrp
     if flyConn then flyConn:Disconnect() end
     flyConn=RS.RenderStepped:Connect(function()
-        if not S.FlyOn or not flyLV or not flyLV.Parent then return end
-        local cam=Cam.CFrame local mv=Vector3.zero
-        if FK.W then mv=mv+cam.LookVector end
-        if FK.S then mv=mv-cam.LookVector end
-        if FK.A then mv=mv-cam.RightVector end
-        if FK.D then mv=mv+cam.RightVector end
-        if FK.SP then mv=mv+Vector3.new(0,1,0) end
-        if FK.CT then mv=mv-Vector3.new(0,1,0) end
-        if mv.Magnitude>0 then mv=mv.Unit*S.FlySpd end
-        flyLV.VectorVelocity=mv
+        if not S.FlyOn then return end
+        local c2=LP.Character
+        if not c2 then return end
+        local hrp2=c2:FindFirstChild("HumanoidRootPart")
+        if not hrp2 then return end
+        if not flyLV or not flyLV.Parent then
+            flyAtt=Instance.new("Attachment") flyAtt.Parent=hrp2
+            flyLV=Instance.new("LinearVelocity")
+            flyLV.Attachment0=flyAtt
+            flyLV.MaxForce=math.huge
+            flyLV.VectorVelocity=Vector3.zero
+            flyLV.Parent=hrp2
+        end
+        local hum2=c2:FindFirstChildOfClass("Humanoid")
+        if hum2 and not hum2.PlatformStand then hum2.PlatformStand=true end
+        flyLV.VectorVelocity=getMoveVec()*S.FlySpd
+        if flyGyro then flyGyro.CFrame=Cam.CFrame end
     end)
-    toast("Bay","WASD di chuyển, Space lên, Ctrl xuống")
+    toast("Bay","Velocity mode")
+end
+local function startFlyCFrame()
+    local c=getChar()
+    local hrp=c:WaitForChild("HumanoidRootPart",5)
+    local hum=c:FindFirstChildOfClass("Humanoid")
+    if not hrp or not hum then return end
+    hum.PlatformStand=true
+    if flyConn then flyConn:Disconnect() end
+    flyConn=RS.RenderStepped:Connect(function(dt)
+        if not S.FlyOn then return end
+        local c2=LP.Character
+        if not c2 then return end
+        local hrp2=c2:FindFirstChild("HumanoidRootPart")
+        local hum2=c2:FindFirstChildOfClass("Humanoid")
+        if not hrp2 then return end
+        if hum2 and not hum2.PlatformStand then hum2.PlatformStand=true end
+        local mv=getMoveVec()
+        if mv.Magnitude>0 then
+            hrp2.CFrame=hrp2.CFrame+mv*(S.FlySpd*dt)
+        end
+    end)
+    toast("Bay","CFrame mode")
+end
+local function startFly()
+    if S.FlyMode=="CFrame" then startFlyCFrame()
+    else startFlyVelocity() end
 end
 
---===== TAB CHIẾN ĐẤU =====
 local CP=Pages["Chiến Đấu"]
-sec(CP,"AUTO SHOOT","🔫")
+sec(CP,"AUTO SHOOT")
 tgl(CP,"Bật Auto Shoot",false,function(v)
     S.AutoShoot=v
     if v then
@@ -982,16 +1014,15 @@ tgl(CP,"Bật Auto Shoot",false,function(v)
 end)
 sld(CP,"Tốc Độ Bắn x10ms",3,50,8,function(v) S.MagicRate=v end)
 tgl(CP,"Bắn Khi Thấy Tâm",false,function(v) S.TriggerBot=v end)
-sec(CP,"MOD SÚNG","⚡")
+sec(CP,"MOD SÚNG")
 tgl(CP,"Tăng Tốc Bắn + Vô Hạn Đạn",false,function(v)
     S.FireRateBoost=v
     applyWeaponMods(v)
-    if v then toast("Mod Súng","Đã áp dụng (nếu game hỗ trợ)") end
+    if v then toast("Mod Súng","Đã áp dụng") end
 end)
 
---===== TAB HIỂN THỊ =====
 local VP=Pages["Hiển Thị"]
-sec(VP,"CAMERA","📷")
+sec(VP,"CAMERA")
 tgl(VP,"Đổi FOV",false,function(v)
     S.FOVChg=v
     Cam.FieldOfView=v and S.FOVVal or 70
@@ -1000,32 +1031,31 @@ sld(VP,"Giá Trị FOV",70,120,90,function(v)
     S.FOVVal=v
     if S.FOVChg then Cam.FieldOfView=v end
 end)
-sec(VP,"ÁNH SÁNG","💡")
+sec(VP,"ÁNH SÁNG")
 tgl(VP,"Sáng Toàn Map",false,function(v)
     S.FullBright=v
     if v then
         Light.Brightness=3 Light.ClockTime=14
         Light.Ambient=Color3.fromRGB(180,180,180)
         Light.OutdoorAmbient=Color3.fromRGB(180,180,180)
-    else
-        Light.Brightness=1
-    end
+    else Light.Brightness=1 end
 end)
 tgl(VP,"Xóa Sương Mù",false,function(v)
     S.NoFog=v
     Light.FogEnd=v and 1e6 or 100000
 end)
-sec(VP,"NHÂN VẬT","🧍")
+sec(VP,"NHÂN VẬT")
 tgl(VP,"Nhân Vật Cầu Vồng",false,function(v) S.RainbowChar=v end)
-sec(VP,"GIAO DIỆN","🎨")
+sec(VP,"GIAO DIỆN")
 tgl(VP,"Watermark",true,function(v) S.WMOn=v WM.Visible=v end)
 tgl(VP,"Theme Rainbow",false,function(v) S.RainbowTheme=v end)
 tgl(VP,"Thông Báo",true,function(v) S.Notify=v end)
+sec(VP,"DEBUG")
+tgl(VP,"Hiện Debug HUD",false,function(v) S.Debug=v end)
 
---===== TAB CẤU HÌNH =====
 local CgP=Pages["Cấu Hình"]
-sec(CgP,"LƯU / TẢI","💾")
-mkBtn(CgP,"💾  Lưu Cấu Hình",function()
+sec(CgP,"LƯU / TẢI")
+mkBtn(CgP,"Lưu Cấu Hình",function()
     local d={}
     for k,v in pairs(S) do
         if type(v)=="number" or type(v)=="boolean" or type(v)=="string" then
@@ -1037,7 +1067,7 @@ mkBtn(CgP,"💾  Lưu Cấu Hình",function()
         toast("Cấu Hình","Đã lưu!")
     end
 end)
-mkBtn(CgP,"📂  Tải Cấu Hình",function()
+mkBtn(CgP,"Tải Cấu Hình",function()
     if isfile and isfile(CFG) and readfile then
         local ok,d=pcall(function() return Http:JSONDecode(readfile(CFG)) end)
         if ok then
@@ -1046,8 +1076,8 @@ mkBtn(CgP,"📂  Tải Cấu Hình",function()
         end
     end
 end)
-sec(CgP,"SCRIPT","⚙")
-mkBtn(CgP,"🔄  Gỡ Script + Reset",function() unload() end)
+sec(CgP,"SCRIPT")
+mkBtn(CgP,"Gỡ Script + Reset",function() unload() end)
 
 local WM=Instance.new("TextLabel")
 WM.Size=UDim2.new(0,340,0,26) WM.Position=UDim2.new(0,12,0,12)
@@ -1055,25 +1085,10 @@ WM.BackgroundColor3=T.bg
 WM.BackgroundTransparency=0.2
 WM.TextColor3=T.accent
 WM.Font=Enum.Font.GothamBold WM.TextSize=13
-WM.Text="⚡ ONE SHOT v14" WM.Parent=Gui
+WM.Text="ONE SHOT v15" WM.Parent=Gui
 Instance.new("UICorner",WM).CornerRadius=UDim.new(0,8)
 local WMS=Instance.new("UIStroke",WM)
 WMS.Color=T.accent WMS.Thickness=1 WMS.Transparency=0.3
-
---===== SEARCH FILTER =====
-SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-    local q=string.lower(SearchBox.Text)
-    local pg=Pages["Ngắm"]
-    for _,obj in ipairs(pg:GetChildren()) do
-        if obj:IsA("Frame") and #obj:GetChildren()>0 then
-            local lbl=obj:FindFirstChildWhichIsA("TextLabel")
-            if lbl and lbl.Text~="" then
-                local match=q=="" or string.find(string.lower(lbl.Text),q,1,true)
-                obj.Visible=match
-            end
-        end
-    end
-end)
 local EspData={}
 local function newEsp(plr)
     local d={}
@@ -1093,6 +1108,10 @@ local function newEsp(plr)
     d.c2=Drawing.new("Line") d.c2.Thickness=1.5 d.c2.Visible=false
     d.c3=Drawing.new("Line") d.c3.Thickness=1.5 d.c3.Visible=false
     d.c4=Drawing.new("Line") d.c4.Thickness=1.5 d.c4.Visible=false
+    d.c5=Drawing.new("Line") d.c5.Thickness=1.5 d.c5.Visible=false
+    d.c6=Drawing.new("Line") d.c6.Thickness=1.5 d.c5.Visible=false
+    d.c7=Drawing.new("Line") d.c7.Thickness=1.5 d.c7.Visible=false
+    d.c8=Drawing.new("Line") d.c8.Thickness=1.5 d.c8.Visible=false
     d.tracer=Drawing.new("Line")
     d.tracer.Thickness=1 d.tracer.Transparency=0.85 d.tracer.Visible=false
     d.arrow=Drawing.new("Triangle")
@@ -1119,7 +1138,8 @@ end
 local function delEsp(plr)
     local d=EspData[plr]
     if d then
-        for _,k in ipairs({"name","dist","bT","bB","bL","bR","c1","c2","c3","c4",
+        for _,k in ipairs({"name","dist","bT","bB","bL","bR",
+            "c1","c2","c3","c4","c5","c6","c7","c8",
             "tracer","arrow","hpBg","hpFill"}) do
             if d[k] then pcall(function() d[k]:Remove() end) end
         end
@@ -1149,8 +1169,12 @@ function unload()
     if flyConn then flyConn:Disconnect() flyConn=nil end
     if flyLV then flyLV:Destroy() flyLV=nil end
     if flyAtt then flyAtt:Destroy() flyAtt=nil end
+    if flyGyro then flyGyro:Destroy() flyGyro=nil end
+    if speedLV then speedLV:Destroy() speedLV=nil end
+    if speedAtt then speedAtt:Destroy() speedAtt=nil end
     for plr,d in pairs(EspData) do
-        for _,k in ipairs({"name","dist","bT","bB","bL","bR","c1","c2","c3","c4",
+        for _,k in ipairs({"name","dist","bT","bB","bL","bR",
+            "c1","c2","c3","c4","c5","c6","c7","c8",
             "tracer","arrow","hpBg","hpFill"}) do
             if d[k] then pcall(function() d[k]:Remove() end) end
         end
@@ -1167,9 +1191,49 @@ function unload()
     if blur then blur:Destroy() end
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification",
-        {Title="One Shot v14",Text="Đã gỡ script và khôi phục mặc định",Duration=3})
+        {Title="One Shot v15",Text="Đã gỡ script",Duration=3})
     end)
 end
+
+local Dbg=Instance.new("TextLabel")
+Dbg.Size=UDim2.new(0,240,0,80)
+Dbg.Position=UDim2.new(0,12,0,44)
+Dbg.BackgroundColor3=Color3.fromRGB(0,0,0)
+Dbg.BackgroundTransparency=0.3
+Dbg.TextColor3=Color3.fromRGB(0,255,140)
+Dbg.Font=Enum.Font.Code
+Dbg.TextSize=12
+Dbg.TextXAlignment=Enum.TextXAlignment.Left
+Dbg.TextYAlignment=Enum.TextYAlignment.Top
+Dbg.Visible=false
+Dbg.Text=""
+Dbg.Parent=Gui
+Instance.new("UICorner",Dbg).CornerRadius=UDim.new(0,6)
+local DbgPad=Instance.new("UIPadding",Dbg)
+DbgPad.PaddingLeft=UDim.new(0,8) DbgPad.PaddingTop=UDim.new(0,6)
+
+task.spawn(function()
+    while Gui.Parent do
+        if S.Debug then
+            Dbg.Visible=true
+            local c=LP.Character
+            local h=c and c:FindFirstChildOfClass("Humanoid")
+            local hrp=c and c:FindFirstChild("HumanoidRootPart")
+            local vel=hrp and hrp.AssemblyLinearVelocity or Vector3.zero
+            Dbg.Text=string.format(
+                "Speed: %s | Mode: %s\nWalkSpeed: %.1f\nPlatformStand: %s\nVel: %.1f,%.1f,%.1f\nFlyConn: %s",
+                S.SpeedOn and "ON" or "OFF",
+                S.SpeedMode,
+                h and h.WalkSpeed or 0,
+                h and tostring(h.PlatformStand) or "?",
+                vel.X,vel.Y,vel.Z,
+                flyConn and "OK" or "—")
+        else
+            Dbg.Visible=false
+        end
+        task.wait(0.2)
+    end
+end)
 local R15={{"Head","UpperTorso"},{"UpperTorso","LowerTorso"},
 {"UpperTorso","LeftUpperArm"},{"LeftUpperArm","LeftLowerArm"},{"LeftLowerArm","LeftHand"},
 {"UpperTorso","RightUpperArm"},{"RightUpperArm","RightLowerArm"},{"RightLowerArm","RightHand"},
@@ -1294,7 +1358,7 @@ local lastAutoShoot=0
 local lastWM=0
 
 table.insert(conns,RS.RenderStepped:Connect(function(dt)
-    -- FOV circle
+    -- FOV
     if S.ShowFOV and S.AimOn then
         Fov.Visible=true
         Fov.Position=Vector2.new(Cam.ViewportSize.X/2,Cam.ViewportSize.Y/2)
@@ -1324,8 +1388,7 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
         local now=tick()
         if now-lastAutoShoot>(S.MagicRate/100) then
             lastAutoShoot=now
-            if S.HookedMode then
-                fireTool()
+            if S.HookedMode then fireTool()
             else
                 local origin=Cam.CFrame.Position
                 Cam.CFrame=CFrame.new(origin,target.Position)
@@ -1353,6 +1416,8 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
             d.bL.Visible=false d.bR.Visible=false
             d.c1.Visible=false d.c2.Visible=false
             d.c3.Visible=false d.c4.Visible=false
+            d.c5.Visible=false d.c6.Visible=false
+            d.c7.Visible=false d.c8.Visible=false
             d.tracer.Visible=false d.arrow.Visible=false
             d.hpBg.Visible=false d.hpFill.Visible=false
             for _,l in ipairs(d.skel) do l.Visible=false end
@@ -1369,6 +1434,8 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
                 d.bL.Visible=false d.bR.Visible=false
                 d.c1.Visible=false d.c2.Visible=false
                 d.c3.Visible=false d.c4.Visible=false
+                d.c5.Visible=false d.c6.Visible=false
+                d.c7.Visible=false d.c8.Visible=false
                 d.tracer.Visible=false d.arrow.Visible=false
                 d.hpBg.Visible=false d.hpFill.Visible=false
                 for _,l in ipairs(d.skel) do l.Visible=false end
@@ -1397,25 +1464,36 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
                             d.bL.Visible=false d.bR.Visible=false
                             local cH=boxH*0.2
                             local cW=boxW*0.3
-                            -- 4 góc L-shape
+                            -- 8 line tạo 4 góc L
                             d.c1.From=Vector2.new(boxL,boxTop.Y)
                             d.c1.To=Vector2.new(boxL+cW,boxTop.Y)
                             d.c1.Color=col d.c1.Visible=true
-                            local e1=Vector2.new(boxL,boxTop.Y+cH)
-                            local l1=Vector2.new(boxL,boxTop.Y)
-                            -- Vẽ thêm cho 4 góc dùng 8 line -- dùng trick
-                            d.c2.From=Vector2.new(boxR-cW,boxTop.Y)
-                            d.c2.To=Vector2.new(boxR,boxTop.Y)
+                            d.c2.From=Vector2.new(boxL,boxTop.Y)
+                            d.c2.To=Vector2.new(boxL,boxTop.Y+cH)
                             d.c2.Color=col d.c2.Visible=true
-                            d.c3.From=Vector2.new(boxL,boxBot.Y-cH)
-                            d.c3.To=Vector2.new(boxL,boxBot.Y)
+                            d.c3.From=Vector2.new(boxR-cW,boxTop.Y)
+                            d.c3.To=Vector2.new(boxR,boxTop.Y)
                             d.c3.Color=col d.c3.Visible=true
-                            d.c4.From=Vector2.new(boxR,boxBot.Y-cH)
-                            d.c4.To=Vector2.new(boxR,boxBot.Y)
+                            d.c4.From=Vector2.new(boxR,boxTop.Y)
+                            d.c4.To=Vector2.new(boxR,boxTop.Y+cH)
                             d.c4.Color=col d.c4.Visible=true
+                            d.c5.From=Vector2.new(boxL,boxBot.Y-cH)
+                            d.c5.To=Vector2.new(boxL,boxBot.Y)
+                            d.c5.Color=col d.c5.Visible=true
+                            d.c6.From=Vector2.new(boxL,boxBot.Y)
+                            d.c6.To=Vector2.new(boxL+cW,boxBot.Y)
+                            d.c6.Color=col d.c6.Visible=true
+                            d.c7.From=Vector2.new(boxR,boxBot.Y-cH)
+                            d.c7.To=Vector2.new(boxR,boxBot.Y)
+                            d.c7.Color=col d.c7.Visible=true
+                            d.c8.From=Vector2.new(boxR-cW,boxBot.Y)
+                            d.c8.To=Vector2.new(boxR,boxBot.Y)
+                            d.c8.Color=col d.c8.Visible=true
                         else
                             d.c1.Visible=false d.c2.Visible=false
                             d.c3.Visible=false d.c4.Visible=false
+                            d.c5.Visible=false d.c6.Visible=false
+                            d.c7.Visible=false d.c8.Visible=false
                             d.bT.From=Vector2.new(boxL,boxTop.Y)
                             d.bT.To=Vector2.new(boxR,boxTop.Y)
                             d.bT.Color=col d.bT.Visible=true
@@ -1434,17 +1512,37 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
                         d.bL.Visible=false d.bR.Visible=false
                         d.c1.Visible=false d.c2.Visible=false
                         d.c3.Visible=false d.c4.Visible=false
+                        d.c5.Visible=false d.c6.Visible=false
+                        d.c7.Visible=false d.c8.Visible=false
                     end
+
+                    -- ===== FIX: Vị trí text theo EspPos =====
+                    local centerY=(boxTop.Y+boxBot.Y)/2
+                    local textYName, textYDist
+                    if S.EspPos=="Trên" then
+                        textYName=boxTop.Y-28
+                        textYDist=boxTop.Y-15
+                    elseif S.EspPos=="Giữa" then
+                        textYName=centerY-14
+                        textYDist=centerY+2
+                    else -- Dưới
+                        textYName=boxBot.Y+4
+                        textYDist=boxBot.Y+18
+                    end
+
                     if S.EspName then
                         d.name.Text=plr.Name
-                        d.name.Position=Vector2.new(boxTop.X,boxTop.Y-28)
+                        d.name.Position=Vector2.new(boxTop.X,textYName)
                         d.name.Color=col d.name.Visible=true
                     else d.name.Visible=false end
+
                     if S.EspDist then
                         d.dist.Text=string.format("[%d m]",math.floor(dist))
-                        d.dist.Position=Vector2.new(boxTop.X,boxTop.Y-15)
+                        d.dist.Position=Vector2.new(boxTop.X,textYDist)
                         d.dist.Color=col d.dist.Visible=true
                     else d.dist.Visible=false end
+
+                    -- HP bar
                     if S.EspHP then
                         local r=math.clamp(hum.Health/math.max(hum.MaxHealth,1),0,1)
                         d.hpBg.From=Vector2.new(boxL-6,boxTop.Y)
@@ -1463,15 +1561,20 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
                     d.bL.Visible=false d.bR.Visible=false
                     d.c1.Visible=false d.c2.Visible=false
                     d.c3.Visible=false d.c4.Visible=false
+                    d.c5.Visible=false d.c6.Visible=false
+                    d.c7.Visible=false d.c8.Visible=false
                     d.name.Visible=false d.dist.Visible=false
                     d.hpBg.Visible=false d.hpFill.Visible=false
                 end
+
+                -- Tracer
                 if S.EspTracer then
-                    d.tracer.From=Vector2.new(Cam.ViewportSize.X/2,
-                        Cam.ViewportSize.Y)
+                    d.tracer.From=Vector2.new(Cam.ViewportSize.X/2,Cam.ViewportSize.Y)
                     d.tracer.To=Vector2.new(headSP.X,headSP.Y)
                     d.tracer.Color=col d.tracer.Visible=true
                 else d.tracer.Visible=false end
+
+                -- Arrow
                 if S.EspArrow and not headOn then
                     local dir=Vector2.new(headSP.X,headSP.Y)-camCenter
                     if dir.Magnitude>0 then
@@ -1485,6 +1588,8 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
                         d.arrow.Color=col d.arrow.Visible=true
                     end
                 else d.arrow.Visible=false end
+
+                -- Skeleton
                 if S.EspSkel then
                     for _,l in ipairs(d.skel) do l.Visible=false end
                     local pairs2=nil
@@ -1509,6 +1614,8 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
                         end
                     end
                 end
+
+                -- Chams
                 if d.ch then
                     if S.EspChams then
                         d.ch.FillColor=col d.ch.OutlineColor=col
@@ -1532,31 +1639,63 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
     end
     -- Speed
     if S.SpeedOn then
+        local c=LP.Character
         local h=getHum()
-        if h and h.WalkSpeed~=S.SpeedVal then h.WalkSpeed=S.SpeedVal end
+        if h and c then
+            if h.WalkSpeed~=S.SpeedVal then h.WalkSpeed=S.SpeedVal end
+            if S.SpeedMode=="Velocity" then
+                local hrp=c:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    if not speedLV or not speedLV.Parent then
+                        if speedAtt then speedAtt:Destroy() end
+                        speedAtt=Instance.new("Attachment") speedAtt.Parent=hrp
+                        speedLV=Instance.new("LinearVelocity")
+                        speedLV.Attachment0=speedAtt
+                        speedLV.MaxForce=math.huge
+                        speedLV.VectorVelocity=Vector3.zero
+                        speedLV.Parent=hrp
+                    end
+                    local md=h.MoveDirection
+                    if md.Magnitude>0 then
+                        speedLV.VectorVelocity=md*S.SpeedVal
+                    else
+                        speedLV.VectorVelocity=Vector3.zero
+                    end
+                end
+            elseif speedLV then
+                speedLV:Destroy() speedLV=nil
+                if speedAtt then speedAtt:Destroy() speedAtt=nil end
+            end
+        end
+    else
+        if speedLV then speedLV:Destroy() speedLV=nil end
+        if speedAtt then speedAtt:Destroy() speedAtt=nil end
     end
+    -- Jump
     if S.JumpOn then
         local h=getHum()
         if h and h.JumpPower~=S.JumpVal then
             h.UseJumpPower=true h.JumpPower=S.JumpVal
         end
     end
+    -- Noclip
     if S.Noclip then
         local c=LP.Character
         if c then
             for _,p in ipairs(c:GetDescendants()) do
-                if p:IsA("BasePart") and p.CanCollide then
-                    p.CanCollide=false
-                end
+                if p:IsA("BasePart") and p.CanCollide then p.CanCollide=false end
             end
         end
     end
-    if S.FlyOn and not flyLV then startFly() end
-    if not S.FlyOn and flyLV then stopFly() end
+    -- Fly
+    if S.FlyOn and not flyConn then startFly() end
+    if not S.FlyOn and flyConn then stopFly() end
+    -- Trigger
     if S.TriggerBot and target then
         local sp=w2s(target.Position)
         if (sp-camCenter).Magnitude<12 then sendM1() end
     end
+    -- Rainbow char
     if S.RainbowChar then
         local c=LP.Character
         if c then
@@ -1567,11 +1706,11 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
             end
         end
     end
-    -- Watermark update
+    -- Watermark
     if S.WMOn then
         local fps=math.floor(1/math.max(dt,1e-4))
-        WM.Text=string.format("⚡ ONE SHOT v14 | %d FPS | %s",
-            fps,target and "🎯 ✓" or "—")
+        WM.Text=string.format("ONE SHOT v15 | %d FPS | %s",
+            fps,target and "✓" or "—")
         if S.RainbowTheme then
             WM.TextColor3=rainbow()
             WMS.Color=rainbow(0.2)
@@ -1580,19 +1719,18 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
             WMS.Color=T.accent
         end
     end
-    -- Footer update mỗi 0.5s
+    -- Footer
     if tick()-lastWM>0.5 then
         lastWM=tick()
         local fps=math.floor(1/math.max(dt,1e-4))
         local ping=math.floor(LP:GetNetworkPing()*1000)
         FooterText.Text=string.format(
-            "FPS: %d  |  Ping: %dms  |  Hook: %s  |  v14",
+            "FPS: %d  |  Ping: %dms  |  Hook: %s  |  v15",
             fps,ping,S.HookedMode and "ON" or "OFF")
         FooterText.TextColor3=S.HookedMode and T.ok or T.textSub
     end
 end))
 
--- Anti-Void
 table.insert(conns,RS.Heartbeat:Connect(function()
     if S.AntiVoid then
         local c=LP.Character
@@ -1606,10 +1744,10 @@ end))
 task.spawn(function()
     task.wait(1)
     if getWeaponManager() then
-        toast("One Shot v14","Đã tìm thấy WeaponManager!")
+        toast("One Shot v15","Đã tìm thấy WeaponManager!")
     else
-        toast("One Shot v14","Không có WeaponManager (fallback aim camera)","warn")
+        toast("One Shot v15","Không có WeaponManager (fallback)","warn")
     end
 end)
 
-toast("One Shot v14","Đã load! RightShift = ẩn/hiện menu.")
+toast("One Shot v15","Đã load! RightShift = ẩn/hiện.")
