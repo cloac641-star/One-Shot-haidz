@@ -14,19 +14,19 @@ local S={
 AimOn=false,AimKey=Enum.KeyCode.E,AimMode="Giữ",AimPart="Đầu",
 AimSmooth=18,AimFOV=150,TeamCheck=false,WallCheck=true,
 Predict=0,ShowFOV=true,FOVRainbow=false,AimHeld=false,
-SilentAim=false,SnapShoot=true,SnapDur=12,SnapUntil=0,
-TargetPriority="Tâm Ngắm",
+SnapShoot=true,SnapDur=12,SnapUntil=0,TargetPriority="Tâm Ngắm",
 AutoShoot=false,TriggerBot=false,HitSound=false,
-Magic=false,MagicRate=8,FireRateBoost=false,
+MagicRate=8,FireRateBoost=false,
 EspOn=false,EspBox=false,EspName=true,EspDist=true,EspHP=true,
 EspTracer=false,EspSkel=false,EspChams=false,EspArrow=false,
 EspPos="Trên",EspCol=Color3.fromRGB(255,60,60),EspRainbow=false,EspMax=1500,
 SpeedOn=false,SpeedVal=32,JumpOn=false,JumpVal=80,InfJump=false,Bunny=false,
 FlyOn=false,FlySpd=80,Noclip=false,AntiVoid=false,
 FOVChg=false,FOVVal=90,FullBright=false,NoFog=false,RainbowChar=false,
-WMOn=true,Notify=true,CurTarget=nil}
-local CFG="oneshot_v12.json"
+WMOn=true,Notify=true,CurTarget=nil,HookedMode=false}
+local CFG="oneshot_v13.json"
 local conns={}
+
 local function notify(t,x,d)
     if not S.Notify then return end
     pcall(function()
@@ -45,13 +45,24 @@ local function isAlive(p)
     local h=c:FindFirstChildOfClass("Humanoid")
     return h and h.Health>0
 end
-local function isVis(part,ig2)
+local function isVis(part,targetChar)
     if not part then return false end
-    local o=Cam.CFrame.Position
-    local ig={LP.Character}
-    if ig2 then for _,v in ipairs(ig2) do table.insert(ig,v) end end
-    local hit=WS:FindPartOnRayWithIgnoreList(Ray.new(o,part.Position-o),ig)
-    return hit==part or (hit and hit:IsDescendantOf(part.Parent))
+    local origin=Cam.CFrame.Position
+    local dir=part.Position-origin
+    if dir.Magnitude<0.1 then return true end
+    local rp=RaycastParams.new()
+    rp.FilterType=Enum.RaycastFilterType.Exclude
+    rp.IgnoreWater=true
+    local exclude={}
+    if LP.Character then table.insert(exclude,LP.Character) end
+    if targetChar then table.insert(exclude,targetChar) end
+    rp.FilterDescendantsInstances=exclude
+    local result=WS:Raycast(origin,dir,rp)
+    if not result then return true end
+    if targetChar and result.Instance:IsDescendantOf(targetChar) then
+        return true
+    end
+    return false
 end
 local function rainbow(o) return Color3.fromHSV((tick()*0.4+(o or 0))%1,1,1) end
 local function w2s(pos)
@@ -73,11 +84,17 @@ local function partOf(char,which)
         return char:FindFirstChild("HumanoidRootPart")
     else return char:FindFirstChild("Head") end
 end
+local function getAnyPart(char)
+    return char:FindFirstChild("Head")
+        or char:FindFirstChild("UpperTorso")
+        or char:FindFirstChild("Torso")
+        or char:FindFirstChild("HumanoidRootPart")
+        or char:FindFirstChildWhichIsA("BasePart")
+end
 
 local WeaponManager=nil
 local old_cast=nil
 local OriginalConstants={}
-
 local function getWeaponManager()
     if WeaponManager then return WeaponManager end
     pcall(function()
@@ -98,43 +115,35 @@ local function getWeaponManager()
     end)
     return WeaponManager
 end
-
 local function hookCast()
-    if not hookfunction then
-        notify("Lỗi","Executor không hỗ trợ hookfunction!")
-        return false
-    end
+    if S.HookedMode then return true end
+    if not hookfunction then return false end
     local wm=getWeaponManager()
-    if not wm or not wm.cast then
-        notify("Lỗi","Không tìm thấy WeaponManager.cast!")
-        return false
-    end
-    if old_cast then return true end
+    if not wm or not wm.cast then return false end
     local ok=pcall(function()
         old_cast=hookfunction(wm.cast,function(origin,direction,bullet_speed,max_distance,...)
-            if S.Magic and S.CurTarget and S.CurTarget.Parent then
-                local head=S.CurTarget
+            if S.CurTarget and S.CurTarget.Parent and S.CurTarget.Parent:FindFirstChild("Humanoid") then
+                local char=S.CurTarget.Parent
                 local canFire=true
-                if S.WallCheck then
-                    local ig={LP.Character}
-                    local hit=WS:FindPartOnRayWithIgnoreList(
-                        Ray.new(origin,head.Position-origin),ig)
-                    if hit and not hit:IsDescendantOf(head.Parent) then
-                        canFire=false
-                    end
+                if S.WallCheck and origin then
+                    local rp=RaycastParams.new()
+                    rp.FilterType=Enum.RaycastFilterType.Exclude
+                    rp.FilterDescendantsInstances={LP.Character,char}
+                    local result=WS:Raycast(origin,S.CurTarget.Position-origin,rp)
+                    if result then canFire=false end
                 end
                 if canFire then
-                    direction=(head.Position-origin).Unit
+                    direction=(S.CurTarget.Position-origin).Unit
                     bullet_speed=9e9
                     max_distance=9e999
                 end
             end
             return old_cast(origin,direction,bullet_speed,max_distance,...)
         end)
+        if ok then S.HookedMode=true end
     end)
     return ok
 end
-
 local function unhookCast()
     if old_cast then
         pcall(function()
@@ -143,8 +152,8 @@ local function unhookCast()
         end)
         old_cast=nil
     end
+    S.HookedMode=false
 end
-
 local function applyWeaponMods(on)
     local wm=getWeaponManager()
     if not wm or not wm.Constants then return end
@@ -164,7 +173,7 @@ local function applyWeaponMods(on)
     end
 end
 local Gui=Instance.new("ScreenGui")
-Gui.Name="OneShotV12"
+Gui.Name="OneShotV13"
 Gui.ResetOnSpawn=false
 Gui.ZIndexBehavior=Enum.ZIndexBehavior.Sibling
 Gui.IgnoreGuiInset=true
@@ -199,7 +208,7 @@ TitleBar.Size=UDim2.new(1,0,0,32)
 TitleBar.BackgroundTransparency=1 TitleBar.Active=true TitleBar.Parent=Main
 local tLbl=Instance.new("TextLabel")
 tLbl.Size=UDim2.new(1,-100,1,0) tLbl.Position=UDim2.new(0,12,0,0)
-tLbl.BackgroundTransparency=1 tLbl.Text="ONE SHOT v12"
+tLbl.BackgroundTransparency=1 tLbl.Text="ONE SHOT v13"
 tLbl.TextColor3=Color3.fromRGB(255,255,255) tLbl.Font=Enum.Font.GothamBold
 tLbl.TextSize=15 tLbl.TextXAlignment=Enum.TextXAlignment.Left tLbl.Parent=TitleBar
 
@@ -303,6 +312,7 @@ local function mkTab(n,o)
     end)
     table.insert(tabs,{bg=b}) newPage(n) return b
 end
+
 local function sec(pg,t)
     local l=Instance.new("TextLabel")
     l.Size=UDim2.new(1,0,0,22) l.BackgroundTransparency=1
@@ -470,16 +480,6 @@ tgl(AP,"Bỏ Qua Đồng Đội",false,function(v) S.TeamCheck=v end)
 tgl(AP,"Kiểm Tra Tường",true,function(v) S.WallCheck=v end)
 sld(AP,"Dự Đoán x100",0,50,0,function(v) S.Predict=v end)
 sec(AP,"NÂNG CAO")
-tgl(AP,"Ngắm Ngầm",false,function(v)
-    S.SilentAim=v
-    if v then
-        local ok=hookCast()
-        if ok then notify("Silent Aim","Đã hook WeaponManager!")
-        else notify("Silent Aim","Không hook được!") end
-    else
-        unhookCast()
-    end
-end)
 tgl(AP,"Khóa Khi Bắn",true,function(v) S.SnapShoot=v end)
 sld(AP,"Thời Gian Khóa x10ms",5,50,12,function(v) S.SnapDur=v end)
 tgl(AP,"Âm Trúng Đích",false,function(v) S.HitSound=v end)
@@ -532,13 +532,13 @@ tgl(MP,"Chống Rớt Map",false,function(v) S.AntiVoid=v end)
 
 local flyLV,flyAtt,flyConn
 local FK={W=false,A=false,S=false,D=false,SP=false,CT=false}
-function stopFly()
+local function stopFly()
     if flyConn then flyConn:Disconnect() flyConn=nil end
     if flyLV then flyLV:Destroy() flyLV=nil end
     if flyAtt then flyAtt:Destroy() flyAtt=nil end
     local h=getHum() if h then h.PlatformStand=false end
 end
-function startFly()
+local function startFly()
     local c=getChar()
     local hrp=c:WaitForChild("HumanoidRootPart",5)
     local hum=c:FindFirstChildOfClass("Humanoid")
@@ -565,9 +565,23 @@ function startFly()
     end)
     notify("Bay","WASD di chuyển, Space lên, Ctrl xuống")
 end
+
 local CP=Pages["Chiến Đấu"]
-sec(CP,"TỰ ĐỘNG")
-tgl(CP,"Tự Bắn Khi Thấy (Auto Shoot)",false,function(v) S.AutoShoot=v end)
+sec(CP,"AUTO SHOOT (SILENT AIM)")
+tgl(CP,"Bật Auto Shoot",false,function(v)
+    S.AutoShoot=v
+    if v then
+        local ok=hookCast()
+        if ok then
+            notify("Auto Shoot","Đã hook WeaponManager — tự bắn vào đầu địch!")
+        else
+            notify("Auto Shoot","Không hook được! Fallback: lia camera + bắn.")
+        end
+    else
+        unhookCast()
+    end
+end)
+sld(CP,"Tốc Độ Bắn x10ms",3,50,8,function(v) S.MagicRate=v end)
 tgl(CP,"Bắn Khi Thấy Tâm",false,function(v) S.TriggerBot=v end)
 sec(CP,"MOD SÚNG")
 tgl(CP,"Tăng Tốc Bắn + Vô Hạn Đạn",false,function(v)
@@ -575,18 +589,6 @@ tgl(CP,"Tăng Tốc Bắn + Vô Hạn Đạn",false,function(v)
     applyWeaponMods(v)
     if v then notify("Mod Súng","Đã áp dụng (nếu game hỗ trợ)") end
 end)
-sec(CP,"SILENT AIM / ĐẠN MA THUẬT")
-tgl(CP,"Bật Silent Aim (Auto Head)",false,function(v)
-    S.Magic=v
-    if v then
-        local ok=hookCast()
-        if ok then notify("Silent Aim","Đã hook WeaponManager!")
-        else notify("Silent Aim","Không hook được!") end
-    else
-        unhookCast()
-    end
-end)
-sld(CP,"Tốc Độ Bắn x10ms",3,50,8,function(v) S.MagicRate=v end)
 
 local VP=Pages["Hiển Thị"]
 sec(VP,"CAMERA")
@@ -619,12 +621,14 @@ sec(VP,"GIAO DIỆN")
 tgl(VP,"Watermark",true,function(v) S.WMOn=v WM.Visible=v end)
 tgl(VP,"Thông Báo",true,function(v) S.Notify=v end)
 
+--===== ESP STORAGE (AUTO REBIND) =====
 local EspData={}
 local function newEsp(plr)
     local bg=Instance.new("BillboardGui")
     bg.Size=UDim2.new(0,200,0,60) bg.AlwaysOnTop=true
     bg.StudsOffsetWorldSpace=Vector3.new(0,3,0) bg.Parent=Gui
     bg.Enabled=false
+    bg.Adornee=nil
     local nameL=Instance.new("TextLabel",bg)
     nameL.Size=UDim2.new(1,0,0,16) nameL.Position=UDim2.new(0,0,0,0)
     nameL.BackgroundTransparency=1
@@ -649,8 +653,7 @@ local function newEsp(plr)
     local ch=Instance.new("Highlight")
     ch.FillTransparency=1 ch.OutlineTransparency=1
     ch.DepthMode=Enum.HighlightDepthMode.AlwaysOnTop
-    if plr.Character then ch.Parent=plr.Character
-    else plr.CharacterAdded:Connect(function(c) ch.Parent=c end) end
+    ch.Parent=nil
     local tracer=Drawing.new("Line")
     tracer.Thickness=1 tracer.Transparency=0.85 tracer.Visible=false
     local arrow=Drawing.new("Triangle")
@@ -662,36 +665,12 @@ local function newEsp(plr)
         skel[i]=l
     end
     EspData[plr]={bg=bg,name=nameL,dist=distL,hp=hpFill,hpBG=hpBG,
-        ch=ch,tracer=tracer,arrow=arrow,skel=skel}
-    local data=EspData[plr]
-    local function bindCharacter(char)
-        if not data or not char then return end
-        local anchor=char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
-        if anchor then data.bg.Adornee=anchor end
-        data.ch.Parent=char
-    end
-    if plr.Character then bindCharacter(plr.Character) end
-    data.charAdded=plr.CharacterAdded:Connect(function(char)
-        data.bg.Enabled=false
-        task.spawn(function()
-            local anchor=char:WaitForChild("Head",5) or char:WaitForChild("HumanoidRootPart",5)
-            if anchor and EspData[plr]==data then
-                data.bg.Adornee=anchor
-                data.ch.Parent=char
-            end
-        end)
-    end)
-    data.charRemoving=plr.CharacterRemoving:Connect(function()
-        data.bg.Enabled=false
-        data.bg.Adornee=nil
-        data.ch.Parent=nil
-    end)
+        ch=ch,tracer=tracer,arrow=arrow,skel=skel,boundChar=nil}
 end
+
 local function delEsp(plr)
     local d=EspData[plr]
     if d then
-        if d.charAdded then d.charAdded:Disconnect() end
-        if d.charRemoving then d.charRemoving:Disconnect() end
         if d.bg then d.bg:Destroy() end
         if d.ch then d.ch:Destroy() end
         if d.tracer then d.tracer:Remove() end
@@ -700,11 +679,48 @@ local function delEsp(plr)
         EspData[plr]=nil
     end
 end
+
+-- Loop riêng cho mỗi player: rebind mỗi 0.5s
+local function rebindLoop(plr)
+    task.spawn(function()
+        while plr.Parent and EspData[plr] do
+            local d=EspData[plr]
+            local char=plr.Character
+            if char and char~=d.boundChar then
+                local head=char:FindFirstChild("Head")
+                if not head then
+                    local ok,t=pcall(function()
+                        return char:WaitForChild("Head",3)
+                    end)
+                    head=ok and t or nil
+                end
+                if head then
+                    d.bg.Adornee=head
+                    d.ch.Parent=char
+                    d.boundChar=char
+                end
+            elseif not char and d.boundChar then
+                d.bg.Enabled=false
+                d.bg.Adornee=nil
+                d.ch.Parent=nil
+                d.boundChar=nil
+            end
+            task.wait(0.5)
+        end
+    end)
+end
+
 for _,p in ipairs(Players:GetPlayers()) do
-    if p~=LP then pcall(newEsp,p) end
+    if p~=LP then
+        pcall(newEsp,p)
+        rebindLoop(p)
+    end
 end
 table.insert(conns,Players.PlayerAdded:Connect(function(p)
-    if p~=LP then pcall(newEsp,p) end
+    if p~=LP then
+        pcall(newEsp,p)
+        rebindLoop(p)
+    end
 end))
 table.insert(conns,Players.PlayerRemoving:Connect(delEsp))
 function unload()
@@ -722,8 +738,6 @@ function unload()
     if flyLV then flyLV:Destroy() flyLV=nil end
     if flyAtt then flyAtt:Destroy() flyAtt=nil end
     for plr,d in pairs(EspData) do
-        if d.charAdded then d.charAdded:Disconnect() end
-        if d.charRemoving then d.charRemoving:Disconnect() end
         if d.bg then d.bg:Destroy() end
         if d.ch then d.ch:Destroy() end
         if d.tracer then d.tracer:Remove() end
@@ -738,7 +752,7 @@ function unload()
     conns={}
     if Gui then Gui:Destroy() end
     if blur then blur:Destroy() end
-    notify("One Shot v12","Đã gỡ script và khôi phục mặc định")
+    notify("One Shot v13","Đã gỡ script và khôi phục mặc định")
 end
 
 local function cBtn(t,x,cb)
@@ -790,15 +804,16 @@ end)
 btn(CgP,"Gỡ Script",function() unload() end)
 
 local WM=Instance.new("TextLabel")
-WM.Size=UDim2.new(0,280,0,26) WM.Position=UDim2.new(0,12,0,12)
+WM.Size=UDim2.new(0,340,0,26) WM.Position=UDim2.new(0,12,0,12)
 WM.BackgroundColor3=Color3.fromRGB(15,15,20)
 WM.BackgroundTransparency=0.3
 WM.TextColor3=Color3.fromRGB(0,170,255)
 WM.Font=Enum.Font.GothamBold WM.TextSize=13
-WM.Text="ONE SHOT v12" WM.Parent=Gui
+WM.Text="ONE SHOT v13" WM.Parent=Gui
 Instance.new("UICorner",WM).CornerRadius=UDim.new(0,6)
 local WMS=Instance.new("UIStroke",WM)
 WMS.Color=Color3.fromRGB(0,170,255) WMS.Transparency=0.3
+
 local function getTarget()
     local best,bestScore=nil,math.huge
     local camPos=Cam.CFrame.Position
@@ -810,17 +825,18 @@ local function getTarget()
             if not char then continue end
             local hum=char:FindFirstChildOfClass("Humanoid")
             if not hum or hum.Health<=0 then continue end
-            local part=partOf(char,S.AimPart)
+            local part=partOf(char,S.AimPart) or getAnyPart(char)
             if not part then continue end
             local sp,on=Cam:WorldToViewportPoint(part.Position)
-            if not on then continue end
-            local dCross=(Vector2.new(sp.X,sp.Y)-center).Magnitude
-            if dCross>S.AimFOV then continue end
-            local ok=true
-            if S.WallCheck and not isVis(part,{char}) then
-                ok=false
+            local dCross
+            if on then
+                dCross=(Vector2.new(sp.X,sp.Y)-center).Magnitude
+            else
+                dCross=99999
             end
-            if not ok then continue end
+            if on and dCross>S.AimFOV then continue end
+            if not on and dCross>S.AimFOV*2 then continue end
+            if S.WallCheck and not isVis(part,char) then continue end
             local score
             if S.TargetPriority=="Tâm Ngắm" then score=dCross
             elseif S.TargetPriority=="Khoảng Cách" then
@@ -899,7 +915,6 @@ local R15={{"Head","UpperTorso"},{"UpperTorso","LowerTorso"},
 local R6={{"Head","Torso"},{"Torso","Left Arm"},{"Torso","Right Arm"},
 {"Torso","Left Leg"},{"Torso","Right Leg"}}
 
-local lastMagic=0
 local lastAutoShoot=0
 
 table.insert(conns,RS.RenderStepped:Connect(function(dt)
@@ -916,31 +931,27 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
     local aiming=S.AimOn and (S.AimHeld or S.AimMode=="Bật Tắt")
     local snapping=tick()<S.SnapUntil
 
-    if target and (aiming or snapping) and not S.Magic then
+    if target and (aiming or snapping) then
         local aimPos=target.Position
         if S.Predict>0 then
             local v=target.AssemblyLinearVelocity or Vector3.zero
             aimPos=aimPos+v*(S.Predict/100)
         end
-        if not S.SilentAim then
-            local alpha=1-math.exp(-(100/math.max(S.AimSmooth,1))*dt)
-            Cam.CFrame=Cam.CFrame:Lerp(CFrame.new(Cam.CFrame.Position,aimPos),alpha)
-        end
+        local alpha=1-math.exp(-(100/math.max(S.AimSmooth,1))*dt)
+        Cam.CFrame=Cam.CFrame:Lerp(CFrame.new(Cam.CFrame.Position,aimPos),alpha)
     end
 
     if S.AutoShoot and target then
         local now=tick()
         if now-lastAutoShoot>(S.MagicRate/100) then
             lastAutoShoot=now
-            fireTool()
-        end
-    end
-
-    if S.Magic and target then
-        local now=tick()
-        if now-lastMagic>(S.MagicRate/100) then
-            lastMagic=now
-            fireTool()
+            if S.HookedMode then
+                fireTool()
+            else
+                local origin=Cam.CFrame.Position
+                Cam.CFrame=CFrame.new(origin,target.Position)
+                fireTool()
+            end
         end
     end
 
@@ -958,10 +969,13 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
         else
             local char=plr.Character
             local head=char:FindFirstChild("Head")
+                or char:FindFirstChild("UpperTorso")
+                or char:FindFirstChild("Torso")
+                or char:FindFirstChild("HumanoidRootPart")
             local hrp=char:FindFirstChild("HumanoidRootPart")
             local hum=char:FindFirstChildOfClass("Humanoid")
             local anchor=head or hrp
-            if not anchor or not hrp or not hum then
+            if not anchor or not hum then
                 d.bg.Enabled=false
                 d.bg.Adornee=nil
             else
@@ -1091,8 +1105,8 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
     end
     if S.WMOn then
         local fps=math.floor(1/math.max(dt,1e-4))
-        WM.Text=string.format("ONE SHOT v12 | %d FPS | Mục Tiêu: %s",
-            fps,target and "✓" or "—")
+        WM.Text=string.format("ONE SHOT v13 | %d FPS | Hook: %s | Mục Tiêu: %s",
+            fps,S.HookedMode and "ON" or "OFF",target and "✓" or "—")
     end
 end))
 
@@ -1129,10 +1143,10 @@ end))
 task.spawn(function()
     task.wait(1)
     if getWeaponManager() then
-        notify("One Shot v12","Đã tìm thấy WeaponManager!")
+        notify("One Shot v13","Đã tìm thấy WeaponManager!")
     else
-        notify("One Shot v12","Không tìm thấy WeaponManager (chỉ ảnh hưởng Silent Aim)")
+        notify("One Shot v13","Không có WeaponManager (dùng fallback aim camera)")
     end
 end)
 
-notify("One Shot v12","Đã load! RightShift = ẩn/hiện.")
+notify("One Shot v13","Đã load! Vào tab Chiến Đấu → Bật Auto Shoot.")
