@@ -17,15 +17,29 @@ Predict=0,ShowFOV=true,FOVRainbow=false,AimHeld=false,
 SnapShoot=true,SnapDur=12,SnapUntil=0,TargetPriority="Tâm Ngắm",
 AutoShoot=false,TriggerBot=false,HitSound=false,
 MagicRate=8,FireRateBoost=false,
-EspOn=false,EspBox=false,EspName=true,EspDist=true,EspHP=true,
+EspOn=false,EspBox=true,EspBoxMode="Đầy Đủ",EspName=true,EspDist=true,EspHP=true,
 EspTracer=false,EspSkel=false,EspChams=false,EspArrow=false,
-EspPos="Trên",EspCol=Color3.fromRGB(255,60,60),EspRainbow=false,EspMax=1500,
+EspPos="Trên",EspCol=Color3.fromRGB(0,200,255),EspRainbow=false,EspMax=1500,
 SpeedOn=false,SpeedVal=32,JumpOn=false,JumpVal=80,InfJump=false,Bunny=false,
 FlyOn=false,FlySpd=80,Noclip=false,AntiVoid=false,
 FOVChg=false,FOVVal=90,FullBright=false,NoFog=false,RainbowChar=false,
-WMOn=true,Notify=true,CurTarget=nil,HookedMode=false}
-local CFG="oneshot_v13.json"
+WMOn=true,Notify=true,CurTarget=nil,HookedMode=false,RainbowTheme=false}
+local CFG="oneshot_v14.json"
 local conns={}
+
+--===== THEME =====
+local T={
+bg=Color3.fromRGB(10,12,18),
+card=Color3.fromRGB(20,24,34),
+cardHi=Color3.fromRGB(28,34,46),
+border=Color3.fromRGB(0,170,255),
+accent=Color3.fromRGB(0,200,255),
+accent2=Color3.fromRGB(160,0,255),
+text=Color3.fromRGB(240,240,245),
+textSub=Color3.fromRGB(140,145,160),
+toggleOff=Color3.fromRGB(40,44,55),
+danger=Color3.fromRGB(255,60,60),
+ok=Color3.fromRGB(0,255,140)}
 
 local function notify(t,x,d)
     if not S.Notify then return end
@@ -53,10 +67,10 @@ local function isVis(part,targetChar)
     local rp=RaycastParams.new()
     rp.FilterType=Enum.RaycastFilterType.Exclude
     rp.IgnoreWater=true
-    local exclude={}
-    if LP.Character then table.insert(exclude,LP.Character) end
-    if targetChar then table.insert(exclude,targetChar) end
-    rp.FilterDescendantsInstances=exclude
+    local ex={}
+    if LP.Character then table.insert(ex,LP.Character) end
+    if targetChar then table.insert(ex,targetChar) end
+    rp.FilterDescendantsInstances=ex
     local result=WS:Raycast(origin,dir,rp)
     if not result then return true end
     if targetChar and result.Instance:IsDescendantOf(targetChar) then
@@ -65,6 +79,10 @@ local function isVis(part,targetChar)
     return false
 end
 local function rainbow(o) return Color3.fromHSV((tick()*0.4+(o or 0))%1,1,1) end
+local function curAccent()
+    if S.RainbowTheme then return rainbow() end
+    return T.accent
+end
 local function w2s(pos)
     local sp,on=Cam:WorldToViewportPoint(pos)
     return Vector2.new(sp.X,sp.Y),on
@@ -173,7 +191,7 @@ local function applyWeaponMods(on)
     end
 end
 local Gui=Instance.new("ScreenGui")
-Gui.Name="OneShotV13"
+Gui.Name="OneShotV14"
 Gui.ResetOnSpawn=false
 Gui.ZIndexBehavior=Enum.ZIndexBehavior.Sibling
 Gui.IgnoreGuiInset=true
@@ -189,32 +207,135 @@ local function isMove(i)
     return i.UserInputType==Enum.UserInputType.MouseMovement
         or i.UserInputType==Enum.UserInputType.Touch
 end
+local function tween(o,t,props)
+    Tween:Create(o,TweenInfo.new(t,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),props):Play()
+end
 
+--===== MAIN WINDOW =====
 local Main=Instance.new("Frame")
-Main.Size=UDim2.new(0,560,0,400)
-Main.Position=UDim2.new(0.5,-280,0.5,-200)
-Main.BackgroundColor3=Color3.fromRGB(18,18,22)
-Main.BackgroundTransparency=0.05
-Main.BorderSizePixel=0 Main.Active=true Main.Parent=Gui
-Instance.new("UICorner",Main).CornerRadius=UDim.new(0,10)
-local MS=Instance.new("UIStroke",Main)
-MS.Thickness=1.5 MS.Color=Color3.fromRGB(0,170,255) MS.Transparency=0.2
-local Grad=Instance.new("UIGradient",Main)
-Grad.Rotation=45
-Grad.Color=ColorSequence.new(Color3.fromRGB(0,170,255),Color3.fromRGB(200,0,255))
+Main.Size=UDim2.new(0,620,0,440)
+Main.Position=UDim2.new(0.5,-310,0.5,-220)
+Main.BackgroundColor3=T.bg
+Main.BorderSizePixel=0
+Main.Active=true
+Main.Parent=Gui
+Main.BackgroundTransparency=0.03
+Instance.new("UICorner",Main).CornerRadius=UDim.new(0,14)
+local MainStroke=Instance.new("UIStroke",Main)
+MainStroke.Thickness=1.5
+MainStroke.Color=T.accent
+MainStroke.Transparency=0.3
+local MainGrad=Instance.new("UIGradient",Main)
+MainGrad.Rotation=45
+MainGrad.Color=ColorSequence.new(T.accent,T.accent2)
 
-local TitleBar=Instance.new("Frame")
-TitleBar.Size=UDim2.new(1,0,0,32)
-TitleBar.BackgroundTransparency=1 TitleBar.Active=true TitleBar.Parent=Main
-local tLbl=Instance.new("TextLabel")
-tLbl.Size=UDim2.new(1,-100,1,0) tLbl.Position=UDim2.new(0,12,0,0)
-tLbl.BackgroundTransparency=1 tLbl.Text="ONE SHOT v13"
-tLbl.TextColor3=Color3.fromRGB(255,255,255) tLbl.Font=Enum.Font.GothamBold
-tLbl.TextSize=15 tLbl.TextXAlignment=Enum.TextXAlignment.Left tLbl.Parent=TitleBar
+--===== HEADER =====
+local Header=Instance.new("Frame")
+Header.Size=UDim2.new(1,0,0,44)
+Header.BackgroundColor3=T.card
+Header.BackgroundTransparency=0.2
+Header.BorderSizePixel=0
+Header.Active=true
+Header.Parent=Main
+Instance.new("UICorner",Header).CornerRadius=UDim.new(0,14)
+local HeaderFix=Instance.new("Frame",Header)
+HeaderFix.Size=UDim2.new(1,0,0,14)
+HeaderFix.Position=UDim2.new(0,0,1,-14)
+HeaderFix.BackgroundColor3=T.card
+HeaderFix.BackgroundTransparency=0.2
+HeaderFix.BorderSizePixel=0
+local HeaderLine=Instance.new("Frame",Header)
+HeaderLine.Size=UDim2.new(1,0,0,1)
+HeaderLine.Position=UDim2.new(0,0,1,-1)
+HeaderLine.BackgroundColor3=T.accent
+HeaderLine.BackgroundTransparency=0.5
+HeaderLine.BorderSizePixel=0
 
+local Logo=Instance.new("TextLabel")
+Logo.Size=UDim2.new(0,220,1,0)
+Logo.Position=UDim2.new(0,16,0,0)
+Logo.BackgroundTransparency=1
+Logo.Text="⚡ ONE SHOT  v14"
+Logo.TextColor3=T.text
+Logo.Font=Enum.Font.GothamBold
+Logo.TextSize=16
+Logo.TextXAlignment=Enum.TextXAlignment.Left
+Logo.Parent=Header
+
+local Version=Instance.new("TextLabel")
+Version.Size=UDim2.new(0,60,1,0)
+Version.Position=UDim2.new(0,220,0,0)
+Version.BackgroundTransparency=1
+Version.Text="CYBER"
+Version.TextColor3=T.accent
+Version.Font=Enum.Font.GothamBold
+Version.TextSize=11
+Version.TextXAlignment=Enum.TextXAlignment.Left
+Version.Parent=Header
+
+-- Search bar
+local SearchFrame=Instance.new("Frame")
+SearchFrame.Size=UDim2.new(0,150,0,26)
+SearchFrame.Position=UDim2.new(1,-260,0.5,-13)
+SearchFrame.BackgroundColor3=T.bg
+SearchFrame.BorderSizePixel=0
+SearchFrame.Parent=Header
+Instance.new("UICorner",SearchFrame).CornerRadius=UDim.new(0,13)
+local SearchStroke=Instance.new("UIStroke",SearchFrame)
+SearchStroke.Color=T.accent SearchStroke.Thickness=1 SearchStroke.Transparency=0.6
+local SearchIcon=Instance.new("TextLabel")
+SearchIcon.Size=UDim2.new(0,24,1,0)
+SearchIcon.Position=UDim2.new(0,6,0,0)
+SearchIcon.BackgroundTransparency=1
+SearchIcon.Text="🔍"
+SearchIcon.TextColor3=T.textSub
+SearchIcon.Font=Enum.Font.Gotham SearchIcon.TextSize=12
+SearchIcon.Parent=SearchFrame
+local SearchBox=Instance.new("TextBox")
+SearchBox.Size=UDim2.new(1,-32,1,0)
+SearchBox.Position=UDim2.new(0,28,0,0)
+SearchBox.BackgroundTransparency=1
+SearchBox.Text=""
+SearchBox.PlaceholderText="Tìm tính năng..."
+SearchBox.PlaceholderColor3=T.textSub
+SearchBox.TextColor3=T.text
+SearchBox.Font=Enum.Font.Gotham
+SearchBox.TextSize=12
+SearchBox.TextXAlignment=Enum.TextXAlignment.Left
+SearchBox.ClearTextOnFocus=false
+SearchBox.Parent=SearchFrame
+
+-- Close / Minimize
+local function hBtn(txt,xOff,cb,col)
+    local b=Instance.new("TextButton")
+    b.Size=UDim2.new(0,26,0,26)
+    b.Position=UDim2.new(1,xOff,0.5,-13)
+    b.BackgroundColor3=T.cardHi
+    b.Text=txt b.TextColor3=col or T.text
+    b.Font=Enum.Font.GothamBold b.TextSize=14
+    b.BorderSizePixel=0 b.Parent=Header
+    Instance.new("UICorner",b).CornerRadius=UDim.new(0,8)
+    b.MouseEnter:Connect(function()
+        tween(b,0.15,{BackgroundColor3=col or T.accent})
+    end)
+    b.MouseLeave:Connect(function()
+        tween(b,0.15,{BackgroundColor3=T.cardHi})
+    end)
+    b.MouseButton1Click:Connect(cb)
+    return b
+end
+hBtn("−",-66,function()
+    Main.Visible=false Handle.Visible=true
+    tween(blur,0.3,{Size=16})
+end)
+hBtn("×",-36,function() unload() end, T.danger)
+
+-- Drag
 local dragging=false local dStart,sPos
-TitleBar.InputBegan:Connect(function(i)
-    if isPress(i) then dragging=true dStart=i.Position sPos=Main.Position end
+Header.InputBegan:Connect(function(i)
+    if isPress(i) then
+        dragging=true dStart=i.Position sPos=Main.Position
+    end
 end)
 UIS.InputChanged:Connect(function(i)
     if dragging and isMove(i) then
@@ -227,19 +348,24 @@ UIS.InputEnded:Connect(function(i)
     if isPress(i) then dragging=false end
 end)
 
+--===== HANDLE MINI =====
 local Handle=Instance.new("Frame")
-Handle.Size=UDim2.new(0,180,0,34)
-Handle.Position=UDim2.new(0.5,-90,0,4)
-Handle.BackgroundColor3=Color3.fromRGB(18,18,22)
-Handle.BackgroundTransparency=0.1
-Handle.BorderSizePixel=0 Handle.Active=true
-Handle.Visible=false Handle.Parent=Gui
-Instance.new("UICorner",Handle).CornerRadius=UDim.new(0,8)
+Handle.Size=UDim2.new(0,200,0,38)
+Handle.Position=UDim2.new(0.5,-100,0,6)
+Handle.BackgroundColor3=T.bg
+Handle.BackgroundTransparency=0.05
+Handle.BorderSizePixel=0
+Handle.Active=true
+Handle.Visible=false
+Handle.Parent=Gui
+Instance.new("UICorner",Handle).CornerRadius=UDim.new(0,10)
 local HS=Instance.new("UIStroke",Handle)
-HS.Color=Color3.fromRGB(0,170,255) HS.Thickness=1.5
+HS.Color=T.accent HS.Thickness=1.5
+local HG=Instance.new("UIGradient",Handle)
+HG.Color=ColorSequence.new(T.accent,T.accent2)
 local HLbl=Instance.new("TextLabel")
 HLbl.Size=UDim2.new(1,0,1,0) HLbl.BackgroundTransparency=1
-HLbl.Text="ONE SHOT  ▼" HLbl.TextColor3=Color3.fromRGB(0,170,255)
+HLbl.Text="⚡ ONE SHOT v14  ▼" HLbl.TextColor3=T.text
 HLbl.Font=Enum.Font.GothamBold HLbl.TextSize=13 HLbl.Parent=Handle
 
 local hDrag=false local hStart,hPos,hMoved
@@ -261,119 +387,272 @@ UIS.InputEnded:Connect(function(i)
         hDrag=false
         if hMoved<8 then
             Main.Visible=true Handle.Visible=false
-            Tween:Create(blur,TweenInfo.new(0.3),{Size=0}):Play()
+            tween(blur,0.3,{Size=0})
         end
     end
 end)
 
-local Side=Instance.new("Frame")
-Side.Size=UDim2.new(0,130,1,-42) Side.Position=UDim2.new(0,0,0,42)
-Side.BackgroundColor3=Color3.fromRGB(25,25,30)
-Side.BorderSizePixel=0 Side.Parent=Main
-Instance.new("UICorner",Side).CornerRadius=UDim.new(0,10)
+--===== SIDEBAR =====
+local Sidebar=Instance.new("Frame")
+Sidebar.Size=UDim2.new(0,140,1,-92)
+Sidebar.Position=UDim2.new(0,0,0,44)
+Sidebar.BackgroundColor3=T.card
+Sidebar.BackgroundTransparency=0.3
+Sidebar.BorderSizePixel=0
+Sidebar.Parent=Main
+
+--===== CONTENT AREA =====
 local Content=Instance.new("Frame")
-Content.Size=UDim2.new(1,-140,1,-52)
-Content.Position=UDim2.new(0,135,0,42)
-Content.BackgroundTransparency=1 Content.Parent=Main
+Content.Size=UDim2.new(1,-150,1,-100)
+Content.Position=UDim2.new(0,144,0,50)
+Content.BackgroundTransparency=1
+Content.Parent=Main
+
+--===== FOOTER =====
+local Footer=Instance.new("Frame")
+Footer.Size=UDim2.new(1,0,0,22)
+Footer.Position=UDim2.new(0,0,1,-22)
+Footer.BackgroundColor3=T.card
+Footer.BackgroundTransparency=0.3
+Footer.BorderSizePixel=0
+Footer.Parent=Main
+Instance.new("UICorner",Footer).CornerRadius=UDim.new(0,14)
+local FFooterFix=Instance.new("Frame",Footer)
+FFooterFix.Size=UDim2.new(1,0,0,14)
+FFooterFix.Position=UDim2.new(0,0,0,0)
+FFooterFix.BackgroundColor3=T.card
+FFooterFix.BackgroundTransparency=0.3
+FFooterFix.BorderSizePixel=0
+local FooterText=Instance.new("TextLabel")
+FooterText.Size=UDim2.new(1,0,1,0)
+FooterText.BackgroundTransparency=1
+FooterText.Text="FPS: -- | Ping: -- | Hook: OFF | v14"
+FooterText.TextColor3=T.textSub
+FooterText.Font=Enum.Font.Gotham
+FooterText.TextSize=11
+FooterText.Parent=Footer
 
 local Pages={}
 local function newPage(n)
     local p=Instance.new("ScrollingFrame")
     p.Size=UDim2.new(1,0,1,0)
-    p.BackgroundTransparency=1 p.BorderSizePixel=0
-    p.ScrollBarThickness=4 p.ScrollBarImageColor3=Color3.fromRGB(0,170,255)
+    p.BackgroundTransparency=1
+    p.BorderSizePixel=0
+    p.ScrollBarThickness=4
+    p.ScrollBarImageColor3=T.accent
     p.CanvasSize=UDim2.new(0,0,0,0)
     p.AutomaticCanvasSize=Enum.AutomaticSize.Y
-    p.ClipsDescendants=true p.Visible=false p.Parent=Content
-    Instance.new("UIListLayout",p).Padding=UDim.new(0,6)
+    p.Visible=false p.Parent=Content
+    local lay=Instance.new("UIListLayout",p)
+    lay.Padding=UDim.new(0,8)
+    lay.SortOrder=Enum.SortOrder.LayoutOrder
     Pages[n]=p return p
 end
 local function selPage(n)
     for k,v in pairs(Pages) do v.Visible=(k==n) end
 end
 local tabs={}
+local tabIcons={Ngắm="🎯",ESP="👁",["Di Chuyển"]="🏃",
+    ["Chiến Đấu"]="🔫",["Hiển Thị"]="🎨",["Cấu Hình"]="⚙"}
 local function mkTab(n,o)
     local b=Instance.new("TextButton")
-    b.Size=UDim2.new(1,-10,0,32)
-    b.Position=UDim2.new(0,5,0,10+(o-1)*36)
-    b.BackgroundColor3=Color3.fromRGB(35,35,42)
-    b.BorderSizePixel=0 b.Text=n
-    b.TextColor3=Color3.fromRGB(200,200,200)
-    b.Font=Enum.Font.Gotham b.TextSize=14 b.Parent=Side
-    Instance.new("UICorner",b).CornerRadius=UDim.new(0,6)
+    b.Size=UDim2.new(1,-16,0,44)
+    b.Position=UDim2.new(0,8,0,8+(o-1)*48)
+    b.BackgroundColor3=T.cardHi
+    b.BackgroundTransparency=1
+    b.BorderSizePixel=0
+    b.Text=""
+    b.AutoButtonColor=false
+    b.Parent=Sidebar
+    Instance.new("UICorner",b).CornerRadius=UDim.new(0,10)
+    local glow=Instance.new("Frame",b)
+    glow.Size=UDim2.new(0,3,0,0)
+    glow.Position=UDim2.new(0,0,0.5,0)
+    glow.AnchorPoint=Vector2.new(0,0.5)
+    glow.BackgroundColor3=T.accent
+    glow.BorderSizePixel=0
+    Instance.new("UICorner",glow).CornerRadius=UDim.new(0,2)
+    local ico=Instance.new("TextLabel",b)
+    ico.Size=UDim2.new(0,30,1,0) ico.Position=UDim2.new(0,10,0,0)
+    ico.BackgroundTransparency=1
+    ico.Text=tabIcons[n] or "•"
+    ico.TextColor3=T.text
+    ico.Font=Enum.Font.GothamBold ico.TextSize=18
+    ico.TextXAlignment=Enum.TextXAlignment.Left
+    local lbl=Instance.new("TextLabel",b)
+    lbl.Size=UDim2.new(1,-46,1,0) lbl.Position=UDim2.new(0,42,0,0)
+    lbl.BackgroundTransparency=1
+    lbl.Text=n
+    lbl.TextColor3=T.textSub
+    lbl.Font=Enum.Font.GothamBold lbl.TextSize=13
+    lbl.TextXAlignment=Enum.TextXAlignment.Left
+    local function setActive(on)
+        if on then
+            b.BackgroundTransparency=0
+            b.BackgroundColor3=T.cardHi
+            ico.TextColor3=T.accent
+            lbl.TextColor3=T.text
+            tween(glow,0.2,{Size=UDim2.new(0,3,0,28)})
+        else
+            b.BackgroundTransparency=1
+            ico.TextColor3=T.textSub
+            lbl.TextColor3=T.textSub
+            tween(glow,0.2,{Size=UDim2.new(0,3,0,0)})
+        end
+    end
+    b.MouseEnter:Connect(function()
+        if not b:GetAttribute("active") then
+            b.BackgroundTransparency=0.6
+        end
+    end)
+    b.MouseLeave:Connect(function()
+        if not b:GetAttribute("active") then
+            b.BackgroundTransparency=1
+        end
+    end)
     b.MouseButton1Click:Connect(function()
         selPage(n)
         for _,x in ipairs(tabs) do
-            x.bg.BackgroundColor3=Color3.fromRGB(35,35,42)
-            x.bg.TextColor3=Color3.fromRGB(200,200,200)
+            x.bg:SetAttribute("active",false)
+            x.setActive(false)
         end
-        b.BackgroundColor3=Color3.fromRGB(0,170,255)
-        b.TextColor3=Color3.fromRGB(255,255,255)
+        b:SetAttribute("active",true)
+        setActive(true)
     end)
-    table.insert(tabs,{bg=b}) newPage(n) return b
+    table.insert(tabs,{bg=b,setActive=setActive})
+    newPage(n)
+    return b
+end
+local function sec(pg,t,icon)
+    local f=Instance.new("Frame")
+    f.Size=UDim2.new(1,0,0,34)
+    f.BackgroundTransparency=1
+    f.Parent=pg
+    local l=Instance.new("TextLabel")
+    l.Size=UDim2.new(1,0,1,0)
+    l.BackgroundTransparency=1
+    l.Text=(icon or "▬").."  "..t
+    l.TextColor3=T.accent
+    l.Font=Enum.Font.GothamBold l.TextSize=13
+    l.TextXAlignment=Enum.TextXAlignment.Left
+    l.Parent=f
 end
 
-local function sec(pg,t)
-    local l=Instance.new("TextLabel")
-    l.Size=UDim2.new(1,0,0,22) l.BackgroundTransparency=1
-    l.Text="  "..t l.TextColor3=Color3.fromRGB(0,170,255)
-    l.Font=Enum.Font.GothamBold l.TextSize=13
-    l.TextXAlignment=Enum.TextXAlignment.Left l.Parent=pg
-end
+--===== TOGGLE (FF style pill) =====
 local function tgl(pg,t,d,cb)
-    local f=Instance.new("Frame") f.Size=UDim2.new(1,-10,0,30)
-    f.BackgroundColor3=Color3.fromRGB(28,28,34)
-    f.BorderSizePixel=0 f.Parent=pg
-    Instance.new("UICorner",f).CornerRadius=UDim.new(0,6)
-    local lb=Instance.new("TextLabel")
-    lb.Size=UDim2.new(1,-60,1,0) lb.Position=UDim2.new(0,10,0,0)
-    lb.BackgroundTransparency=1 lb.Text=t
-    lb.TextColor3=Color3.fromRGB(230,230,230)
-    lb.Font=Enum.Font.Gotham lb.TextSize=13
-    lb.TextXAlignment=Enum.TextXAlignment.Left lb.Parent=f
-    local b=Instance.new("TextButton")
-    b.Size=UDim2.new(0,44,0,20) b.Position=UDim2.new(1,-52,0.5,-10)
-    b.BackgroundColor3=d and Color3.fromRGB(0,170,255) or Color3.fromRGB(50,50,58)
-    b.Text=d and "BẬT" or "TẮT"
-    b.TextColor3=Color3.fromRGB(255,255,255)
-    b.Font=Enum.Font.GothamBold b.TextSize=11
-    b.BorderSizePixel=0 b.Parent=f
-    Instance.new("UICorner",b).CornerRadius=UDim.new(0,4)
+    local card=Instance.new("Frame")
+    card.Size=UDim2.new(1,-4,0,36)
+    card.BackgroundColor3=T.card
+    card.BorderSizePixel=0
+    card.Parent=pg
+    Instance.new("UICorner",card).CornerRadius=UDim.new(0,10)
+    local stk=Instance.new("UIStroke",card)
+    stk.Color=T.accent stk.Thickness=1 stk.Transparency=0.7
+    local lbl=Instance.new("TextLabel",card)
+    lbl.Size=UDim2.new(1,-70,1,0)
+    lbl.Position=UDim2.new(0,12,0,0)
+    lbl.BackgroundTransparency=1
+    lbl.Text=t
+    lbl.TextColor3=T.text
+    lbl.Font=Enum.Font.Gotham lbL=lbL
+    lbl.Font=Enum.Font.Gotham lbl.TextSize=13
+    lbl.TextXAlignment=Enum.TextXAlignment.Left
+    local track=Instance.new("Frame",card)
+    track.Size=UDim2.new(0,44,0,22)
+    track.Position=UDim2.new(1,-56,0.5,-11)
+    track.BackgroundColor3=d and T.accent or T.toggleOff
+    track.BorderSizePixel=0
+    Instance.new("UICorner",track).CornerRadius=UDim.new(0,11)
+    local knob=Instance.new("Frame",track)
+    knob.Size=UDim2.new(0,16,0,16)
+    knob.Position=d and UDim2.new(1,-20,0.5,-8) or UDim2.new(0,3,0.5,-8)
+    knob.BackgroundColor3=Color3.fromRGB(255,255,255)
+    knob.BorderSizePixel=0
+    Instance.new("UICorner",knob).CornerRadius=UDim.new(1,0)
+    local btn=Instance.new("TextButton",card)
+    btn.Size=UDim2.new(1,0,1,0)
+    btn.BackgroundTransparency=1
+    btn.Text=""
+    btn.ZIndex=5
     local st=d
-    b.MouseButton1Click:Connect(function()
+    btn.MouseButton1Click:Connect(function()
         st=not st
-        b.BackgroundColor3=st and Color3.fromRGB(0,170,255) or Color3.fromRGB(50,50,58)
-        b.Text=st and "BẬT" or "TẮT"
+        if st then
+            tween(track,0.15,{BackgroundColor3=T.accent})
+            tween(knob,0.15,{Position=UDim2.new(1,-20,0.5,-8)})
+            tween(card,0.2,{BackgroundColor3=T.cardHi})
+            tween(stk,0.2,{Transparency=0.3})
+        else
+            tween(track,0.15,{BackgroundColor3=T.toggleOff})
+            tween(knob,0.15,{Position=UDim2.new(0,3,0.5,-8)})
+            tween(card,0.2,{BackgroundColor3=T.card})
+            tween(stk,0.2,{Transparency=0.7})
+        end
         cb(st)
     end)
-    return f
+    card.MouseEnter:Connect(function()
+        tween(card,0.15,{BackgroundColor3=T.cardHi})
+    end)
+    card.MouseLeave:Connect(function()
+        if not st then tween(card,0.15,{BackgroundColor3=T.card}) end
+    end)
+    return card
 end
+
+--===== SLIDER =====
 local function sld(pg,t,mn,mx,d,cb)
-    local f=Instance.new("Frame") f.Size=UDim2.new(1,-10,0,44)
-    f.BackgroundColor3=Color3.fromRGB(28,28,34)
-    f.BorderSizePixel=0 f.Parent=pg
-    Instance.new("UICorner",f).CornerRadius=UDim.new(0,6)
-    local lb=Instance.new("TextLabel")
-    lb.Size=UDim2.new(1,-20,0,20) lb.Position=UDim2.new(0,10,0,2)
-    lb.BackgroundTransparency=1 lb.Text=t..": "..d
-    lb.TextColor3=Color3.fromRGB(230,230,230)
-    lb.Font=Enum.Font.Gotham lb.TextSize=13
-    lb.TextXAlignment=Enum.TextXAlignment.Left lb.Parent=f
-    local bar=Instance.new("Frame")
-    bar.Size=UDim2.new(1,-20,0,14) bar.Position=UDim2.new(0,10,0,25)
-    bar.BackgroundColor3=Color3.fromRGB(50,50,58)
-    bar.BorderSizePixel=0 bar.Active=true bar.Parent=f
-    Instance.new("UICorner",bar).CornerRadius=UDim.new(0,7)
-    local fill=Instance.new("Frame")
+    local card=Instance.new("Frame")
+    card.Size=UDim2.new(1,-4,0,52)
+    card.BackgroundColor3=T.card
+    card.BorderSizePixel=0
+    card.Parent=pg
+    Instance.new("UICorner",card).CornerRadius=UDim.new(0,10)
+    local stk=Instance.new("UIStroke",card)
+    stk.Color=T.accent stk.Thickness=1 stk.Transparency=0.7
+    local lbl=Instance.new("TextLabel",card)
+    lbl.Size=UDim2.new(1,-70,0,20)
+    lbl.Position=UDim2.new(0,12,0,4)
+    lbl.BackgroundTransparency=1
+    lbl.Text=t
+    lbl.TextColor3=T.text
+    lbl.Font=Enum.Font.Gotham lbl.TextSize=13
+    lbl.TextXAlignment=Enum.TextXAlignment.Left
+    local val=Instance.new("TextLabel",card)
+    val.Size=UDim2.new(0,60,0,20)
+    val.Position=UDim2.new(1,-72,0,4)
+    val.BackgroundTransparency=1
+    val.Text=tostring(d)
+    val.TextColor3=T.accent
+    val.Font=Enum.Font.GothamBold val.TextSize=13
+    val.TextXAlignment=Enum.TextXAlignment.Right
+    local bar=Instance.new("Frame",card)
+    bar.Size=UDim2.new(1,-24,0,10)
+    bar.Position=UDim2.new(0,12,0,32)
+    bar.BackgroundColor3=T.toggleOff
+    bar.BorderSizePixel=0
+    bar.Active=true
+    Instance.new("UICorner",bar).CornerRadius=UDim.new(0,5)
+    local fill=Instance.new("Frame",bar)
     fill.Size=UDim2.new((d-mn)/(mx-mn),0,1,0)
-    fill.BackgroundColor3=Color3.fromRGB(0,170,255)
-    fill.BorderSizePixel=0 fill.Active=false fill.Parent=bar
-    Instance.new("UICorner",fill).CornerRadius=UDim.new(0,7)
+    fill.BackgroundColor3=T.accent
+    fill.BorderSizePixel=0
+    fill.Active=false
+    Instance.new("UICorner",fill).CornerRadius=UDim.new(0,5)
+    local fillGrad=Instance.new("UIGradient",fill)
+    fillGrad.Color=ColorSequence.new(T.accent,T.accent2)
+    local knob=Instance.new("Frame",fill)
+    knob.Size=UDim2.new(0,14,0,14)
+    knob.Position=UDim2.new(1,-7,0.5,-7)
+    knob.BackgroundColor3=Color3.fromRGB(255,255,255)
+    knob.BorderSizePixel=0
+    Instance.new("UICorner",knob).CornerRadius=UDim.new(1,0)
     local drg=false
     local function upd(x)
         local r=math.clamp((x-bar.AbsolutePosition.X)/math.max(bar.AbsoluteSize.X,1),0,1)
         local v=math.floor(mn+r*(mx-mn)+0.5)
-        fill.Size=UDim2.new(r,0,1,0) lb.Text=t..": "..v cb(v)
+        fill.Size=UDim2.new(r,0,1,0)
+        val.Text=tostring(v)
+        cb(v)
     end
     bar.InputBegan:Connect(function(i)
         if isPress(i) then drg=true upd(i.Position.X) end
@@ -384,91 +663,209 @@ local function sld(pg,t,mn,mx,d,cb)
     UIS.InputEnded:Connect(function(i)
         if isPress(i) and drg then drg=false end
     end)
-    return f
+    return card
 end
+
+--===== DROPDOWN =====
 local function drp(pg,t,opts,d,cb)
-    local f=Instance.new("Frame") f.Size=UDim2.new(1,-10,0,32)
-    f.BackgroundColor3=Color3.fromRGB(28,28,34)
-    f.BorderSizePixel=0 f.Parent=pg
-    Instance.new("UICorner",f).CornerRadius=UDim.new(0,6)
-    local b=Instance.new("TextButton")
-    b.Size=UDim2.new(1,0,1,0) b.BackgroundTransparency=1
-    b.Text=t..": "..d b.TextColor3=Color3.fromRGB(230,230,230)
-    b.Font=Enum.Font.Gotham b.TextSize=13
-    b.TextXAlignment=Enum.TextXAlignment.Left b.Parent=f
-    Instance.new("UIPadding",b).PaddingLeft=UDim.new(0,10)
+    local card=Instance.new("Frame")
+    card.Size=UDim2.new(1,-4,0,36)
+    card.BackgroundColor3=T.card
+    card.BorderSizePixel=0
+    card.Parent=pg
+    Instance.new("UICorner",card).CornerRadius=UDim.new(0,10)
+    local stk=Instance.new("UIStroke",card)
+    stk.Color=T.accent stk.Thickness=1 stk.Transparency=0.7
+    local lbl=Instance.new("TextLabel",card)
+    lbl.Size=UDim2.new(1,-100,1,0)
+    lbl.Position=UDim2.new(0,12,0,0)
+    lbl.BackgroundTransparency=1
+    lbl.Text=t
+    lbl.TextColor3=T.text
+    lbl.Font=Enum.Font.Gotham lbl.TextSize=13
+    lbl.TextXAlignment=Enum.TextXAlignment.Left
+    local b=Instance.new("TextButton",card)
+    b.Size=UDim2.new(0,90,1,0)
+    b.Position=UDim2.new(1,-96,0,0)
+    b.BackgroundTransparency=1
+    b.Text=d.."  ▼"
+    b.TextColor3=T.accent
+    b.Font=Enum.Font.GothamBold b.TextSize=12
+    b.TextXAlignment=Enum.TextXAlignment.Right
     local ls=Instance.new("Frame")
-    ls.BackgroundColor3=Color3.fromRGB(22,22,28)
-    ls.BorderSizePixel=0 ls.Visible=false ls.ZIndex=9999 ls.Parent=Gui
-    Instance.new("UICorner",ls).CornerRadius=UDim.new(0,6)
-    local st=Instance.new("UIStroke",ls)
-    st.Color=Color3.fromRGB(0,170,255) st.Thickness=1
+    ls.BackgroundColor3=T.cardHi
+    ls.BorderSizePixel=0
+    ls.Visible=false ls.ZIndex=9999 ls.Parent=Gui
+    Instance.new("UICorner",ls).CornerRadius=UDim.new(0,10)
+    local lstk=Instance.new("UIStroke",ls)
+    lstk.Color=T.accent lstk.Thickness=1
     for i,o in ipairs(opts) do
         local ob=Instance.new("TextButton")
-        ob.Size=UDim2.new(1,0,0,28)
-        ob.Position=UDim2.new(0,0,0,(i-1)*28)
-        ob.BackgroundTransparency=1 ob.Text=o
-        ob.TextColor3=Color3.fromRGB(220,220,220)
+        ob.Size=UDim2.new(1,0,0,30)
+        ob.Position=UDim2.new(0,0,0,(i-1)*30)
+        ob.BackgroundTransparency=1
+        ob.Text=(o==d and "✓  " or "     ")..o
+        ob.TextColor3=o==d and T.accent or T.text
         ob.Font=Enum.Font.Gotham ob.TextSize=13
+        ob.TextXAlignment=Enum.TextXAlignment.Left
         ob.ZIndex=10000 ob.Parent=ls
+        Instance.new("UIPadding",ob).PaddingLeft=UDim.new(0,10)
+        ob.MouseEnter:Connect(function()
+            ob.BackgroundTransparency=0.7
+            ob.BackgroundColor3=T.accent
+        end)
+        ob.MouseLeave:Connect(function()
+            ob.BackgroundTransparency=1
+        end)
         ob.MouseButton1Click:Connect(function()
-            b.Text=t..": "..o ls.Visible=false cb(o)
+            b.Text=o.."  ▼"
+            ls.Visible=false
+            cb(o)
         end)
     end
     b.MouseButton1Click:Connect(function()
         if ls.Visible then ls.Visible=false return end
-        ls.Size=UDim2.new(0,f.AbsoluteSize.X,0,#opts*28)
-        ls.Position=UDim2.new(0,f.AbsolutePosition.X,
-            0,f.AbsolutePosition.Y+f.AbsoluteSize.Y+2)
+        ls.Size=UDim2.new(0,card.AbsoluteSize.X,0,#opts*30)
+        ls.Position=UDim2.new(0,card.AbsolutePosition.X,
+            0,card.AbsolutePosition.Y+card.AbsoluteSize.Y+2)
         ls.Visible=true
     end)
-    return f
+    return card
 end
-local function btn(pg,t,cb)
-    local b=Instance.new("TextButton")
-    b.Size=UDim2.new(1,-10,0,32)
-    b.BackgroundColor3=Color3.fromRGB(0,170,255) b.Text=t
-    b.TextColor3=Color3.fromRGB(255,255,255)
-    b.Font=Enum.Font.GothamBold b.TextSize=13
-    b.BorderSizePixel=0 b.Parent=pg
-    Instance.new("UICorner",b).CornerRadius=UDim.new(0,6)
-    b.MouseButton1Click:Connect(cb) return b
-end
+
+--===== KEYBIND =====
 local function kb(pg,t,d,cb)
-    local f=Instance.new("Frame") f.Size=UDim2.new(1,-10,0,30)
-    f.BackgroundColor3=Color3.fromRGB(28,28,34)
-    f.BorderSizePixel=0 f.Parent=pg
-    Instance.new("UICorner",f).CornerRadius=UDim.new(0,6)
-    local lb=Instance.new("TextLabel")
-    lb.Size=UDim2.new(1,-90,1,0) lb.Position=UDim2.new(0,10,0,0)
-    lb.BackgroundTransparency=1 lb.Text=t
-    lb.TextColor3=Color3.fromRGB(230,230,230)
-    lb.Font=Enum.Font.Gotham lb.TextSize=13
-    lb.TextXAlignment=Enum.TextXAlignment.Left lb.Parent=f
-    local b=Instance.new("TextButton")
-    b.Size=UDim2.new(0,80,0,22) b.Position=UDim2.new(1,-88,0.5,-11)
-    b.BackgroundColor3=Color3.fromRGB(50,50,58) b.Text=d.Name
-    b.TextColor3=Color3.fromRGB(255,255,255)
-    b.Font=Enum.Font.Gotham b.TextSize=12
-    b.BorderSizePixel=0 b.Parent=f
-    Instance.new("UICorner",b).CornerRadius=UDim.new(0,4)
+    local card=Instance.new("Frame")
+    card.Size=UDim2.new(1,-4,0,36)
+    card.BackgroundColor3=T.card
+    card.BorderSizePixel=0
+    card.Parent=pg
+    Instance.new("UICorner",card).CornerRadius=UDim.new(0,10)
+    local stk=Instance.new("UIStroke",card)
+    stk.Color=T.accent stk.Thickness=1 stk.Transparency=0.7
+    local lbl=Instance.new("TextLabel",card)
+    lbl.Size=UDim2.new(1,-100,1,0)
+    lbl.Position=UDim2.new(0,12,0,0)
+    lbl.BackgroundTransparency=1
+    lbl.Text=t
+    lbl.TextColor3=T.text
+    lbl.Font=Enum.Font.Gotham lbl.TextSize=13
+    lbl.TextXAlignment=Enum.TextXAlignment.Left
+    local b=Instance.new("TextButton",card)
+    b.Size=UDim2.new(0,70,0,24)
+    b.Position=UDim2.new(1,-78,0.5,-12)
+    b.BackgroundColor3=T.cardHi
+    b.Text=d.Name
+    b.TextColor3=T.accent
+    b.Font=Enum.Font.GothamBold b.TextSize=12
+    b.BorderSizePixel=0
+    Instance.new("UICorner",b).CornerRadius=UDim.new(0,6)
     local li=false
-    b.MouseButton1Click:Connect(function() li=true b.Text="..." end)
+    b.MouseButton1Click:Connect(function()
+        li=true b.Text="..."
+    end)
     UIS.InputBegan:Connect(function(i,gp)
         if li and i.UserInputType==Enum.UserInputType.Keyboard then
-            b.Text=i.KeyCode.Name li=false cb(i.KeyCode)
+            b.Text=i.KeyCode.Name
+            li=false
+            cb(i.KeyCode)
         end
     end)
-    return f
+    return card
 end
+
+--===== BUTTON =====
+local function mkBtn(pg,t,cb)
+    local b=Instance.new("TextButton")
+    b.Size=UDim2.new(1,-4,0,36)
+    b.BackgroundColor3=T.accent
+    b.Text=t
+    b.TextColor3=Color3.fromRGB(255,255,255)
+    b.Font=Enum.Font.GothamBold b.TextSize=13
+    b.BorderSizePixel=0
+    b.AutoButtonColor=false
+    b.Parent=pg
+    Instance.new("UICorner",b).CornerRadius=UDim.new(0,10)
+    local g=Instance.new("UIGradient",b)
+    g.Color=ColorSequence.new(T.accent,T.accent2)
+    b.MouseEnter:Connect(function()
+        tween(b,0.15,{BackgroundColor3=T.accent2})
+    end)
+    b.MouseLeave:Connect(function()
+        tween(b,0.15,{BackgroundColor3=T.accent})
+    end)
+    b.MouseButton1Click:Connect(cb)
+    return b
+end
+--===== TOAST =====
+local toastHolder=Instance.new("Frame")
+toastHolder.Size=UDim2.new(0,300,1,0)
+toastHolder.Position=UDim2.new(1,-320,0,20)
+toastHolder.BackgroundTransparency=1
+toastHolder.Parent=Gui
+local toastList=Instance.new("UIListLayout",toastHolder)
+toastList.Padding=UDim.new(0,8)
+toastList.HorizontalAlignment=Enum.HorizontalAlignment.Right
+toastList.VerticalAlignment=Enum.VerticalAlignment.Top
+
+local function toast(title,text,kind)
+    local c=kind=="err" and T.danger or kind=="warn" and Color3.fromRGB(255,180,0) or T.ok
+    local f=Instance.new("Frame")
+    f.Size=UDim2.new(1,0,0,52)
+    f.BackgroundColor3=T.card
+    f.BorderSizePixel=0
+    f.Parent=toastHolder
+    Instance.new("UICorner",f).CornerRadius=UDim.new(0,10)
+    local s=Instance.new("UIStroke",f)
+    s.Color=c s.Thickness=1.5
+    local bar=Instance.new("Frame",f)
+    bar.Size=UDim2.new(0,4,1,-12)
+    bar.Position=UDim2.new(0,4,0,6)
+    bar.BackgroundColor3=c
+    bar.BorderSizePixel=0
+    Instance.new("UICorner",bar).CornerRadius=UDim.new(1,0)
+    local ico=Instance.new("TextLabel",f)
+    ico.Size=UDim2.new(0,30,1,0) ico.Position=UDim2.new(0,14,0,0)
+    ico.BackgroundTransparency=1
+    ico.Text=kind=="err" and "✗" or kind=="warn" and "⚠" or "✓"
+    ico.TextColor3=c
+    ico.Font=Enum.Font.GothamBold ico.TextSize=18
+    local tt=Instance.new("TextLabel",f)
+    tt.Size=UDim2.new(1,-52,0,20)
+    tt.Position=UDim2.new(0,46,0,6)
+    tt.BackgroundTransparency=1
+    tt.Text=title
+    tt.TextColor3=T.text
+    tt.Font=Enum.Font.GothamBold tt.TextSize=13
+    tt.TextXAlignment=Enum.TextXAlignment.Left
+    local tx=Instance.new("TextLabel",f)
+    tx.Size=UDim2.new(1,-52,0,16)
+    tx.Position=UDim2.new(0,46,0,26)
+    tx.BackgroundTransparency=1
+    tx.Text=text
+    tx.TextColor3=T.textSub
+    tx.Font=Enum.Font.Gotham tx.TextSize=11
+    tx.TextXAlignment=Enum.TextXAlignment.Left
+    -- Slide in
+    f.Position=UDim2.new(1,0,0,0)
+    tween(f,0.3,{Position=UDim2.new(0,0,0,0)})
+    task.delay(2.5,function()
+        tween(f,0.3,{Position=UDim2.new(1,0,0,0),BackgroundTransparency=1})
+        task.wait(0.4)
+        f:Destroy()
+    end)
+end
+
+--===== TABS =====
 mkTab("Ngắm",1) mkTab("ESP",2) mkTab("Di Chuyển",3)
 mkTab("Chiến Đấu",4) mkTab("Hiển Thị",5) mkTab("Cấu Hình",6)
 selPage("Ngắm")
-tabs[1].bg.BackgroundColor3=Color3.fromRGB(0,170,255)
-tabs[1].bg.TextColor3=Color3.fromRGB(255,255,255)
+tabs[1].bg:SetAttribute("active",true)
+tabs[1].setActive(true)
 
+--===== TAB NGẮM =====
 local AP=Pages["Ngắm"]
-sec(AP,"NGẮM TỰ ĐỘNG")
+sec(AP,"NGẮM TỰ ĐỘNG","🎯")
 tgl(AP,"Bật Ngắm",false,function(v) S.AimOn=v end)
 kb(AP,"Phím Ngắm",Enum.KeyCode.E,function(k) S.AimKey=k end)
 drp(AP,"Chế Độ",{"Giữ","Bật Tắt"},"Giữ",function(v) S.AimMode=v end)
@@ -479,11 +876,11 @@ sld(AP,"Phạm Vi Ngắm",20,600,150,function(v) S.AimFOV=v end)
 tgl(AP,"Bỏ Qua Đồng Đội",false,function(v) S.TeamCheck=v end)
 tgl(AP,"Kiểm Tra Tường",true,function(v) S.WallCheck=v end)
 sld(AP,"Dự Đoán x100",0,50,0,function(v) S.Predict=v end)
-sec(AP,"NÂNG CAO")
+sec(AP,"NÂNG CAO","⚡")
 tgl(AP,"Khóa Khi Bắn",true,function(v) S.SnapShoot=v end)
 sld(AP,"Thời Gian Khóa x10ms",5,50,12,function(v) S.SnapDur=v end)
 tgl(AP,"Âm Trúng Đích",false,function(v) S.HitSound=v end)
-sec(AP,"VÒNG NGẮM")
+sec(AP,"VÒNG NGẮM","⭕")
 tgl(AP,"Hiện Vòng Ngắm",true,function(v) S.ShowFOV=v end)
 tgl(AP,"Cầu Vồng",false,function(v) S.FOVRainbow=v end)
 
@@ -491,30 +888,34 @@ local Fov=Drawing.new("Circle")
 Fov.Thickness=1.5 Fov.NumSides=64 Fov.Transparency=1
 Fov.Filled=false Fov.Visible=false
 
+--===== TAB ESP =====
 local EP=Pages["ESP"]
-sec(EP,"ESP")
+sec(EP,"BẬT ESP","👁")
 tgl(EP,"Bật ESP",false,function(v) S.EspOn=v end)
-tgl(EP,"Khung",false,function(v) S.EspBox=v end)
+tgl(EP,"Khung Box",true,function(v) S.EspBox=v end)
+drp(EP,"Kiểu Box",{"Đầy Đủ","4 Góc"},"Đầy Đủ",function(v) S.EspBoxMode=v end)
 tgl(EP,"Tên",true,function(v) S.EspName=v end)
 tgl(EP,"Khoảng Cách",true,function(v) S.EspDist=v end)
 tgl(EP,"Thanh Máu",true,function(v) S.EspHP=v end)
-tgl(EP,"Đường Chỉ",false,function(v) S.EspTracer=v end)
-tgl(EP,"Xương",false,function(v) S.EspSkel=v end)
-tgl(EP,"Viền Sáng",false,function(v) S.EspChams=v end)
-tgl(EP,"Mũi Tên Chỉ Hướng",false,function(v) S.EspArrow=v end)
-sec(EP,"KIỂU")
-drp(EP,"Vị Trí",{"Trên","Giữa","Dưới"},"Trên",function(v) S.EspPos=v end)
+sec(EP,"CHI TIẾT","🔍")
+tgl(EP,"Xương Skeleton",false,function(v) S.EspSkel=v end)
+tgl(EP,"Đường Chỉ Tracer",false,function(v) S.EspTracer=v end)
+tgl(EP,"Viền Sáng Chams",false,function(v) S.EspChams=v end)
+tgl(EP,"Mũi Tên Off-screen",false,function(v) S.EspArrow=v end)
+sec(EP,"KIỂU","🎨")
+drp(EP,"Vị Trí Text",{"Trên","Giữa","Dưới"},"Trên",function(v) S.EspPos=v end)
 tgl(EP,"Màu Cầu Vồng",false,function(v) S.EspRainbow=v end)
 sld(EP,"Khoảng Cách Tối Đa",100,5000,1500,function(v) S.EspMax=v end)
 
+--===== TAB DI CHUYỂN =====
 local MP=Pages["Di Chuyển"]
-sec(MP,"TỐC ĐỘ")
+sec(MP,"TỐC ĐỘ","🏃")
 tgl(MP,"Bật Tốc Độ",false,function(v)
     S.SpeedOn=v
     if not v then local h=getHum() if h then h.WalkSpeed=16 end end
 end)
 sld(MP,"Giá Trị",16,300,32,function(v) S.SpeedVal=v end)
-sec(MP,"NHẢY")
+sec(MP,"NHẢY","🦘")
 tgl(MP,"Lực Nhảy",false,function(v)
     S.JumpOn=v
     local h=getHum()
@@ -523,10 +924,10 @@ end)
 sld(MP,"Giá Trị Nhảy",50,500,80,function(v) S.JumpVal=v end)
 tgl(MP,"Nhảy Vô Hạn",false,function(v) S.InfJump=v end)
 tgl(MP,"Nhảy Liên Tục",false,function(v) S.Bunny=v end)
-sec(MP,"BAY")
+sec(MP,"BAY","✈")
 tgl(MP,"Bật Bay",false,function(v) S.FlyOn=v end)
 sld(MP,"Tốc Độ Bay",10,500,80,function(v) S.FlySpd=v end)
-sec(MP,"KHÁC")
+sec(MP,"KHÁC","⚙")
 tgl(MP,"Xuyên Tường",false,function(v) S.Noclip=v end)
 tgl(MP,"Chống Rớt Map",false,function(v) S.AntiVoid=v end)
 
@@ -563,35 +964,34 @@ local function startFly()
         if mv.Magnitude>0 then mv=mv.Unit*S.FlySpd end
         flyLV.VectorVelocity=mv
     end)
-    notify("Bay","WASD di chuyển, Space lên, Ctrl xuống")
+    toast("Bay","WASD di chuyển, Space lên, Ctrl xuống")
 end
 
+--===== TAB CHIẾN ĐẤU =====
 local CP=Pages["Chiến Đấu"]
-sec(CP,"AUTO SHOOT (SILENT AIM)")
+sec(CP,"AUTO SHOOT","🔫")
 tgl(CP,"Bật Auto Shoot",false,function(v)
     S.AutoShoot=v
     if v then
         local ok=hookCast()
-        if ok then
-            notify("Auto Shoot","Đã hook WeaponManager — tự bắn vào đầu địch!")
-        else
-            notify("Auto Shoot","Không hook được! Fallback: lia camera + bắn.")
-        end
+        if ok then toast("Auto Shoot","Đã hook WeaponManager!")
+        else toast("Auto Shoot","Không hook được, fallback aim camera","warn") end
     else
         unhookCast()
     end
 end)
 sld(CP,"Tốc Độ Bắn x10ms",3,50,8,function(v) S.MagicRate=v end)
 tgl(CP,"Bắn Khi Thấy Tâm",false,function(v) S.TriggerBot=v end)
-sec(CP,"MOD SÚNG")
+sec(CP,"MOD SÚNG","⚡")
 tgl(CP,"Tăng Tốc Bắn + Vô Hạn Đạn",false,function(v)
     S.FireRateBoost=v
     applyWeaponMods(v)
-    if v then notify("Mod Súng","Đã áp dụng (nếu game hỗ trợ)") end
+    if v then toast("Mod Súng","Đã áp dụng (nếu game hỗ trợ)") end
 end)
 
+--===== TAB HIỂN THỊ =====
 local VP=Pages["Hiển Thị"]
-sec(VP,"CAMERA")
+sec(VP,"CAMERA","📷")
 tgl(VP,"Đổi FOV",false,function(v)
     S.FOVChg=v
     Cam.FieldOfView=v and S.FOVVal or 70
@@ -600,7 +1000,7 @@ sld(VP,"Giá Trị FOV",70,120,90,function(v)
     S.FOVVal=v
     if S.FOVChg then Cam.FieldOfView=v end
 end)
-sec(VP,"ÁNH SÁNG")
+sec(VP,"ÁNH SÁNG","💡")
 tgl(VP,"Sáng Toàn Map",false,function(v)
     S.FullBright=v
     if v then
@@ -615,112 +1015,124 @@ tgl(VP,"Xóa Sương Mù",false,function(v)
     S.NoFog=v
     Light.FogEnd=v and 1e6 or 100000
 end)
-sec(VP,"NHÂN VẬT")
+sec(VP,"NHÂN VẬT","🧍")
 tgl(VP,"Nhân Vật Cầu Vồng",false,function(v) S.RainbowChar=v end)
-sec(VP,"GIAO DIỆN")
+sec(VP,"GIAO DIỆN","🎨")
 tgl(VP,"Watermark",true,function(v) S.WMOn=v WM.Visible=v end)
+tgl(VP,"Theme Rainbow",false,function(v) S.RainbowTheme=v end)
 tgl(VP,"Thông Báo",true,function(v) S.Notify=v end)
 
---===== ESP STORAGE (AUTO REBIND) =====
+--===== TAB CẤU HÌNH =====
+local CgP=Pages["Cấu Hình"]
+sec(CgP,"LƯU / TẢI","💾")
+mkBtn(CgP,"💾  Lưu Cấu Hình",function()
+    local d={}
+    for k,v in pairs(S) do
+        if type(v)=="number" or type(v)=="boolean" or type(v)=="string" then
+            d[k]=v
+        end
+    end
+    if writefile then
+        writefile(CFG,Http:JSONEncode(d))
+        toast("Cấu Hình","Đã lưu!")
+    end
+end)
+mkBtn(CgP,"📂  Tải Cấu Hình",function()
+    if isfile and isfile(CFG) and readfile then
+        local ok,d=pcall(function() return Http:JSONDecode(readfile(CFG)) end)
+        if ok then
+            for k,v in pairs(d) do S[k]=v end
+            toast("Cấu Hình","Đã tải! (cần bật lại toggle)")
+        end
+    end
+end)
+sec(CgP,"SCRIPT","⚙")
+mkBtn(CgP,"🔄  Gỡ Script + Reset",function() unload() end)
+
+local WM=Instance.new("TextLabel")
+WM.Size=UDim2.new(0,340,0,26) WM.Position=UDim2.new(0,12,0,12)
+WM.BackgroundColor3=T.bg
+WM.BackgroundTransparency=0.2
+WM.TextColor3=T.accent
+WM.Font=Enum.Font.GothamBold WM.TextSize=13
+WM.Text="⚡ ONE SHOT v14" WM.Parent=Gui
+Instance.new("UICorner",WM).CornerRadius=UDim.new(0,8)
+local WMS=Instance.new("UIStroke",WM)
+WMS.Color=T.accent WMS.Thickness=1 WMS.Transparency=0.3
+
+--===== SEARCH FILTER =====
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local q=string.lower(SearchBox.Text)
+    local pg=Pages["Ngắm"]
+    for _,obj in ipairs(pg:GetChildren()) do
+        if obj:IsA("Frame") and #obj:GetChildren()>0 then
+            local lbl=obj:FindFirstChildWhichIsA("TextLabel")
+            if lbl and lbl.Text~="" then
+                local match=q=="" or string.find(string.lower(lbl.Text),q,1,true)
+                obj.Visible=match
+            end
+        end
+    end
+end)
 local EspData={}
 local function newEsp(plr)
-    local bg=Instance.new("BillboardGui")
-    bg.Size=UDim2.new(0,200,0,60) bg.AlwaysOnTop=true
-    bg.StudsOffsetWorldSpace=Vector3.new(0,3,0) bg.Parent=Gui
-    bg.Enabled=false
-    bg.Adornee=nil
-    local nameL=Instance.new("TextLabel",bg)
-    nameL.Size=UDim2.new(1,0,0,16) nameL.Position=UDim2.new(0,0,0,0)
-    nameL.BackgroundTransparency=1
-    nameL.TextColor3=Color3.fromRGB(255,255,255)
-    nameL.Font=Enum.Font.GothamBold nameL.TextSize=13
-    nameL.TextStrokeTransparency=0
-    local distL=Instance.new("TextLabel",bg)
-    distL.Size=UDim2.new(1,0,0,14) distL.Position=UDim2.new(0,0,0,16)
-    distL.BackgroundTransparency=1
-    distL.TextColor3=Color3.fromRGB(255,255,255)
-    distL.Font=Enum.Font.Gotham distL.TextSize=11
-    distL.TextStrokeTransparency=0
-    local hpBG=Instance.new("Frame",bg)
-    hpBG.Size=UDim2.new(0,60,0,5) hpBG.Position=UDim2.new(0.5,-30,0,32)
-    hpBG.BackgroundColor3=Color3.fromRGB(30,30,30) hpBG.BorderSizePixel=0
-    Instance.new("UICorner",hpBG).CornerRadius=UDim.new(0,2)
-    local hpFill=Instance.new("Frame",hpBG)
-    hpFill.Size=UDim2.new(1,0,1,0)
-    hpFill.BackgroundColor3=Color3.fromRGB(0,255,0)
-    hpFill.BorderSizePixel=0
-    Instance.new("UICorner",hpFill).CornerRadius=UDim.new(0,2)
+    local d={}
+    d.name=Drawing.new("Text")
+    d.name.Size=14 d.name.Center=true d.name.Outline=true
+    d.name.OutlineColor=Color3.new(0,0,0) d.name.Visible=false
+    d.name.Font=2
+    d.dist=Drawing.new("Text")
+    d.dist.Size=12 d.dist.Center=true d.dist.Outline=true
+    d.dist.OutlineColor=Color3.new(0,0,0) d.dist.Visible=false
+    d.dist.Font=2
+    d.bT=Drawing.new("Line") d.bT.Thickness=1.2 d.bT.Visible=false
+    d.bB=Drawing.new("Line") d.bB.Thickness=1.2 d.bB.Visible=false
+    d.bL=Drawing.new("Line") d.bL.Thickness=1.2 d.bL.Visible=false
+    d.bR=Drawing.new("Line") d.bR.Thickness=1.2 d.bR.Visible=false
+    d.c1=Drawing.new("Line") d.c1.Thickness=1.5 d.c1.Visible=false
+    d.c2=Drawing.new("Line") d.c2.Thickness=1.5 d.c2.Visible=false
+    d.c3=Drawing.new("Line") d.c3.Thickness=1.5 d.c3.Visible=false
+    d.c4=Drawing.new("Line") d.c4.Thickness=1.5 d.c4.Visible=false
+    d.tracer=Drawing.new("Line")
+    d.tracer.Thickness=1 d.tracer.Transparency=0.85 d.tracer.Visible=false
+    d.arrow=Drawing.new("Triangle")
+    d.arrow.Filled=true d.arrow.Thickness=1 d.arrow.Visible=false
+    d.hpBg=Drawing.new("Line") d.hpBg.Thickness=4 d.hpBg.Visible=false
+    d.hpFill=Drawing.new("Line") d.hpFill.Thickness=4 d.hpFill.Visible=false
+    d.skel={}
+    for i=1,15 do
+        local l=Drawing.new("Line")
+        l.Thickness=1.5 l.Visible=false
+        d.skel[i]=l
+    end
     local ch=Instance.new("Highlight")
     ch.FillTransparency=1 ch.OutlineTransparency=1
     ch.DepthMode=Enum.HighlightDepthMode.AlwaysOnTop
-    ch.Parent=nil
-    local tracer=Drawing.new("Line")
-    tracer.Thickness=1 tracer.Transparency=0.85 tracer.Visible=false
-    local arrow=Drawing.new("Triangle")
-    arrow.Filled=true arrow.Thickness=1 arrow.Visible=false
-    local skel={}
-    for i=1,15 do
-        local l=Drawing.new("Line")
-        l.Thickness=1.5 l.Color=Color3.fromRGB(255,255,255) l.Visible=false
-        skel[i]=l
+    if plr.Character then ch.Parent=plr.Character
+    else
+        local c=plr.CharacterAdded:Connect(function(c2) ch.Parent=c2 end)
+        table.insert(conns,c)
     end
-    EspData[plr]={bg=bg,name=nameL,dist=distL,hp=hpFill,hpBG=hpBG,
-        ch=ch,tracer=tracer,arrow=arrow,skel=skel,boundChar=nil}
+    d.ch=ch
+    EspData[plr]=d
 end
-
 local function delEsp(plr)
     local d=EspData[plr]
     if d then
-        if d.bg then d.bg:Destroy() end
+        for _,k in ipairs({"name","dist","bT","bB","bL","bR","c1","c2","c3","c4",
+            "tracer","arrow","hpBg","hpFill"}) do
+            if d[k] then pcall(function() d[k]:Remove() end) end
+        end
+        for _,l in ipairs(d.skel) do pcall(function() l:Remove() end) end
         if d.ch then d.ch:Destroy() end
-        if d.tracer then d.tracer:Remove() end
-        if d.arrow then d.arrow:Remove() end
-        if d.skel then for _,l in ipairs(d.skel) do l:Remove() end end
         EspData[plr]=nil
     end
 end
-
--- Loop riêng cho mỗi player: rebind mỗi 0.5s
-local function rebindLoop(plr)
-    task.spawn(function()
-        while plr.Parent and EspData[plr] do
-            local d=EspData[plr]
-            local char=plr.Character
-            if char and char~=d.boundChar then
-                local head=char:FindFirstChild("Head")
-                if not head then
-                    local ok,t=pcall(function()
-                        return char:WaitForChild("Head",3)
-                    end)
-                    head=ok and t or nil
-                end
-                if head then
-                    d.bg.Adornee=head
-                    d.ch.Parent=char
-                    d.boundChar=char
-                end
-            elseif not char and d.boundChar then
-                d.bg.Enabled=false
-                d.bg.Adornee=nil
-                d.ch.Parent=nil
-                d.boundChar=nil
-            end
-            task.wait(0.5)
-        end
-    end)
-end
-
 for _,p in ipairs(Players:GetPlayers()) do
-    if p~=LP then
-        pcall(newEsp,p)
-        rebindLoop(p)
-    end
+    if p~=LP then pcall(newEsp,p) end
 end
 table.insert(conns,Players.PlayerAdded:Connect(function(p)
-    if p~=LP then
-        pcall(newEsp,p)
-        rebindLoop(p)
-    end
+    if p~=LP then pcall(newEsp,p) end
 end))
 table.insert(conns,Players.PlayerRemoving:Connect(delEsp))
 function unload()
@@ -738,11 +1150,12 @@ function unload()
     if flyLV then flyLV:Destroy() flyLV=nil end
     if flyAtt then flyAtt:Destroy() flyAtt=nil end
     for plr,d in pairs(EspData) do
-        if d.bg then d.bg:Destroy() end
+        for _,k in ipairs({"name","dist","bT","bB","bL","bR","c1","c2","c3","c4",
+            "tracer","arrow","hpBg","hpFill"}) do
+            if d[k] then pcall(function() d[k]:Remove() end) end
+        end
+        for _,l in ipairs(d.skel) do pcall(function() l:Remove() end) end
         if d.ch then d.ch:Destroy() end
-        if d.tracer then d.tracer:Remove() end
-        if d.arrow then d.arrow:Remove() end
-        if d.skel then for _,l in ipairs(d.skel) do l:Remove() end end
     end
     EspData={}
     if Fov then Fov:Remove() end
@@ -752,103 +1165,18 @@ function unload()
     conns={}
     if Gui then Gui:Destroy() end
     if blur then blur:Destroy() end
-    notify("One Shot v13","Đã gỡ script và khôi phục mặc định")
-end
-
-local function cBtn(t,x,cb)
-    local b=Instance.new("TextButton")
-    b.Size=UDim2.new(0,24,0,24) b.Position=UDim2.new(1,x,0,4)
-    b.BackgroundColor3=Color3.fromRGB(40,40,48)
-    b.Text=t b.TextColor3=Color3.fromRGB(255,255,255)
-    b.Font=Enum.Font.GothamBold b.TextSize=14
-    b.BorderSizePixel=0 b.Parent=TitleBar
-    Instance.new("UICorner",b).CornerRadius=UDim.new(0,6)
-    b.MouseEnter:Connect(function()
-        b.BackgroundColor3=Color3.fromRGB(60,60,70)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification",
+        {Title="One Shot v14",Text="Đã gỡ script và khôi phục mặc định",Duration=3})
     end)
-    b.MouseLeave:Connect(function()
-        b.BackgroundColor3=Color3.fromRGB(40,40,48)
-    end)
-    b.MouseButton1Click:Connect(cb)
-    return b
 end
-cBtn("−",-60,function()
-    Main.Visible=false Handle.Visible=true
-    Tween:Create(blur,TweenInfo.new(0.3),{Size=16}):Play()
-end)
-cBtn("×",-32,function() unload() end)
-
-local CgP=Pages["Cấu Hình"]
-sec(CgP,"LƯU / TẢI")
-btn(CgP,"Lưu Cấu Hình",function()
-    local d={}
-    for k,v in pairs(S) do
-        if type(v)=="number" or type(v)=="boolean" or type(v)=="string" then
-            d[k]=v
-        end
-    end
-    if writefile then
-        writefile(CFG,Http:JSONEncode(d))
-        notify("Cấu Hình","Đã lưu!")
-    end
-end)
-btn(CgP,"Tải Cấu Hình",function()
-    if isfile and isfile(CFG) and readfile then
-        local ok,d=pcall(function() return Http:JSONDecode(readfile(CFG)) end)
-        if ok then
-            for k,v in pairs(d) do S[k]=v end
-            notify("Cấu Hình","Đã tải! (cần bật lại toggle)")
-        end
-    end
-end)
-btn(CgP,"Gỡ Script",function() unload() end)
-
-local WM=Instance.new("TextLabel")
-WM.Size=UDim2.new(0,340,0,26) WM.Position=UDim2.new(0,12,0,12)
-WM.BackgroundColor3=Color3.fromRGB(15,15,20)
-WM.BackgroundTransparency=0.3
-WM.TextColor3=Color3.fromRGB(0,170,255)
-WM.Font=Enum.Font.GothamBold WM.TextSize=13
-WM.Text="ONE SHOT v13" WM.Parent=Gui
-Instance.new("UICorner",WM).CornerRadius=UDim.new(0,6)
-local WMS=Instance.new("UIStroke",WM)
-WMS.Color=Color3.fromRGB(0,170,255) WMS.Transparency=0.3
-
-local function getTarget()
-    local best,bestScore=nil,math.huge
-    local camPos=Cam.CFrame.Position
-    local center=Vector2.new(Cam.ViewportSize.X/2,Cam.ViewportSize.Y/2)
-    for _,p in ipairs(Players:GetPlayers()) do
-        if p~=LP and isAlive(p) then
-            if S.TeamCheck and p.Team==LP.Team then continue end
-            local char=p.Character
-            if not char then continue end
-            local hum=char:FindFirstChildOfClass("Humanoid")
-            if not hum or hum.Health<=0 then continue end
-            local part=partOf(char,S.AimPart) or getAnyPart(char)
-            if not part then continue end
-            local sp,on=Cam:WorldToViewportPoint(part.Position)
-            local dCross
-            if on then
-                dCross=(Vector2.new(sp.X,sp.Y)-center).Magnitude
-            else
-                dCross=99999
-            end
-            if on and dCross>S.AimFOV then continue end
-            if not on and dCross>S.AimFOV*2 then continue end
-            if S.WallCheck and not isVis(part,char) then continue end
-            local score
-            if S.TargetPriority=="Tâm Ngắm" then score=dCross
-            elseif S.TargetPriority=="Khoảng Cách" then
-                score=(camPos-part.Position).Magnitude
-            else score=hum.Health end
-            if score<bestScore then
-                best=part bestScore=score
-            end
-        end
-    end
-    return best
-end
+local R15={{"Head","UpperTorso"},{"UpperTorso","LowerTorso"},
+{"UpperTorso","LeftUpperArm"},{"LeftUpperArm","LeftLowerArm"},{"LeftLowerArm","LeftHand"},
+{"UpperTorso","RightUpperArm"},{"RightUpperArm","RightLowerArm"},{"RightLowerArm","RightHand"},
+{"LowerTorso","LeftUpperLeg"},{"LeftUpperLeg","LeftLowerLeg"},{"LeftLowerLeg","LeftFoot"},
+{"LowerTorso","RightUpperLeg"},{"RightUpperLeg","RightLowerLeg"},{"RightLowerLeg","RightFoot"}}
+local R6={{"Head","Torso"},{"Torso","Left Arm"},{"Torso","Right Arm"},
+{"Torso","Left Leg"},{"Torso","Right Leg"}}
 
 table.insert(conns,UIS.InputBegan:Connect(function(i,gp)
     if gp then return end
@@ -886,6 +1214,26 @@ table.insert(conns,UIS.InputEnded:Connect(function(i)
     if k==Enum.KeyCode.LeftControl then FK.CT=false end
 end))
 
+table.insert(conns,UIS.JumpRequest:Connect(function()
+    if S.InfJump or S.Bunny then
+        local h=getHum()
+        if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end
+    end
+end))
+
+table.insert(conns,UIS.InputBegan:Connect(function(i,gp)
+    if gp then return end
+    if i.KeyCode==Enum.KeyCode.RightShift then
+        if Main.Visible then
+            Main.Visible=false Handle.Visible=true
+            tween(blur,0.3,{Size=16})
+        else
+            Main.Visible=true Handle.Visible=false
+            tween(blur,0.3,{Size=0})
+        end
+    end
+end))
+
 local function getTool()
     local c=LP.Character
     if not c then return nil end
@@ -906,24 +1254,53 @@ end
 local hitSnd=Instance.new("Sound")
 hitSnd.SoundId="rbxassetid://5656678979"
 hitSnd.Volume=1 hitSnd.Parent=Gui
-
-local R15={{"Head","UpperTorso"},{"UpperTorso","LowerTorso"},
-{"UpperTorso","LeftUpperArm"},{"LeftUpperArm","LeftLowerArm"},{"LeftLowerArm","LeftHand"},
-{"UpperTorso","RightUpperArm"},{"RightUpperArm","RightLowerArm"},{"RightLowerArm","RightHand"},
-{"LowerTorso","LeftUpperLeg"},{"LeftUpperLeg","LeftLowerLeg"},{"LeftLowerLeg","LeftFoot"},
-{"LowerTorso","RightUpperLeg"},{"RightUpperLeg","RightLowerLeg"},{"RightLowerLeg","RightFoot"}}
-local R6={{"Head","Torso"},{"Torso","Left Arm"},{"Torso","Right Arm"},
-{"Torso","Left Leg"},{"Torso","Right Leg"}}
+local function getTarget()
+    local best,bestScore=nil,math.huge
+    local camPos=Cam.CFrame.Position
+    local center=Vector2.new(Cam.ViewportSize.X/2,Cam.ViewportSize.Y/2)
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p~=LP and isAlive(p) then
+            if S.TeamCheck and p.Team==LP.Team then continue end
+            local char=p.Character
+            if not char then continue end
+            local hum=char:FindFirstChildOfClass("Humanoid")
+            if not hum or hum.Health<=0 then continue end
+            local part=partOf(char,S.AimPart) or getAnyPart(char)
+            if not part then continue end
+            local sp,on=Cam:WorldToViewportPoint(part.Position)
+            local dCross
+            if on then
+                dCross=(Vector2.new(sp.X,sp.Y)-center).Magnitude
+            else
+                dCross=99999
+            end
+            if on and dCross>S.AimFOV then continue end
+            if not on and dCross>S.AimFOV*2 then continue end
+            if S.WallCheck and not isVis(part,char) then continue end
+            local score
+            if S.TargetPriority=="Tâm Ngắm" then score=dCross
+            elseif S.TargetPriority=="Khoảng Cách" then
+                score=(camPos-part.Position).Magnitude
+            else score=hum.Health end
+            if score<bestScore then
+                best=part bestScore=score
+            end
+        end
+    end
+    return best
+end
 
 local lastAutoShoot=0
+local lastWM=0
 
 table.insert(conns,RS.RenderStepped:Connect(function(dt)
+    -- FOV circle
     if S.ShowFOV and S.AimOn then
         Fov.Visible=true
         Fov.Position=Vector2.new(Cam.ViewportSize.X/2,Cam.ViewportSize.Y/2)
         Fov.Radius=S.AimFOV
         if S.FOVRainbow then Fov.Color=rainbow()
-        else Fov.Color=Color3.fromRGB(0,170,255) end
+        else Fov.Color=curAccent() end
     else Fov.Visible=false end
 
     local target=getTarget()
@@ -931,6 +1308,7 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
     local aiming=S.AimOn and (S.AimHeld or S.AimMode=="Bật Tắt")
     local snapping=tick()<S.SnapUntil
 
+    -- AIM
     if target and (aiming or snapping) then
         local aimPos=target.Position
         if S.Predict>0 then
@@ -941,6 +1319,7 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
         Cam.CFrame=Cam.CFrame:Lerp(CFrame.new(Cam.CFrame.Position,aimPos),alpha)
     end
 
+    -- AUTO SHOOT
     if S.AutoShoot and target then
         local now=tick()
         if now-lastAutoShoot>(S.MagicRate/100) then
@@ -955,118 +1334,203 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
         end
     end
 
+    --===== ESP RENDER =====
     local camCenter=Vector2.new(Cam.ViewportSize.X/2,Cam.ViewportSize.Y/2)
     for plr,d in pairs(EspData) do
-        local hide=not plr.Parent or not plr.Character
-            or not isAlive(plr) or not S.EspOn
+        local hide=false
+        if not S.EspOn or not plr.Parent or not plr.Character then hide=true end
+        local char=plr.Character
+        local head,hrp,hum
+        if char then
+            head=char:FindFirstChild("Head")
+            hrp=char:FindFirstChild("HumanoidRootPart")
+            hum=char:FindFirstChildOfClass("Humanoid")
+        end
+        if not char or not head or not hum or hum.Health<=0 then hide=true end
         if hide then
-            d.bg.Enabled=false
+            d.name.Visible=false d.dist.Visible=false
+            d.bT.Visible=false d.bB.Visible=false
+            d.bL.Visible=false d.bR.Visible=false
+            d.c1.Visible=false d.c2.Visible=false
+            d.c3.Visible=false d.c4.Visible=false
+            d.tracer.Visible=false d.arrow.Visible=false
+            d.hpBg.Visible=false d.hpFill.Visible=false
+            for _,l in ipairs(d.skel) do l.Visible=false end
             if d.ch then
                 d.ch.FillTransparency=1 d.ch.OutlineTransparency=1
             end
-            d.tracer.Visible=false d.arrow.Visible=false
-            for _,l in ipairs(d.skel) do l.Visible=false end
         else
-            local char=plr.Character
-            local head=char:FindFirstChild("Head")
-                or char:FindFirstChild("UpperTorso")
-                or char:FindFirstChild("Torso")
-                or char:FindFirstChild("HumanoidRootPart")
-            local hrp=char:FindFirstChild("HumanoidRootPart")
-            local hum=char:FindFirstChildOfClass("Humanoid")
-            local anchor=head or hrp
-            if not anchor or not hum then
-                d.bg.Enabled=false
-                d.bg.Adornee=nil
+            local headPos=head.Position
+            local hrpPos=hrp and hrp.Position or (headPos-Vector3.new(0,2.5,0))
+            local dist=(Cam.CFrame.Position-headPos).Magnitude
+            if dist>S.EspMax then
+                d.name.Visible=false d.dist.Visible=false
+                d.bT.Visible=false d.bB.Visible=false
+                d.bL.Visible=false d.bR.Visible=false
+                d.c1.Visible=false d.c2.Visible=false
+                d.c3.Visible=false d.c4.Visible=false
+                d.tracer.Visible=false d.arrow.Visible=false
+                d.hpBg.Visible=false d.hpFill.Visible=false
+                for _,l in ipairs(d.skel) do l.Visible=false end
+                if d.ch then
+                    d.ch.FillTransparency=1 d.ch.OutlineTransparency=1
+                end
             else
-                if d.bg.Adornee~=anchor then d.bg.Adornee=anchor end
-                if d.ch.Parent~=char then d.ch.Parent=char end
-                local dist=(Cam.CFrame.Position-anchor.Position).Magnitude
-                if dist>S.EspMax then
-                    d.bg.Enabled=false
-                    d.tracer.Visible=false d.arrow.Visible=false
-                    for _,l in ipairs(d.skel) do l.Visible=false end
-                else
-                    d.bg.Enabled=true
-                    local col=S.EspRainbow and rainbow() or S.EspCol
-                    d.name.Visible=S.EspName
-                    d.name.Text=plr.Name d.name.TextColor3=col
-                    d.dist.Visible=S.EspDist
-                    d.dist.Text=string.format("[%d m]",math.floor(dist))
-                    d.dist.TextColor3=col
-                    d.hpBG.Visible=S.EspHP
-                    local r=math.clamp(hum.Health/math.max(hum.MaxHealth,1),0,1)
-                    d.hp.Size=UDim2.new(r,0,1,0)
-                    d.hp.BackgroundColor3=Color3.fromRGB(255*(1-r),255*r,0)
-                    if S.EspPos=="Trên" then
-                        d.bg.StudsOffsetWorldSpace=Vector3.new(0,3.2,0)
-                    elseif S.EspPos=="Giữa" then
-                        d.bg.StudsOffsetWorldSpace=Vector3.new(0,1.5,0)
-                    else
-                        d.bg.StudsOffsetWorldSpace=Vector3.new(0,0,0)
-                    end
-                    if S.EspChams then
-                        d.ch.FillColor=col d.ch.OutlineColor=col
-                        d.ch.FillTransparency=0.55 d.ch.OutlineTransparency=0
-                    else
-                        d.ch.FillTransparency=1 d.ch.OutlineTransparency=1
-                    end
-                    if S.EspTracer then
-                        local hp2=w2s(anchor.Position)
-                        d.tracer.Color=col d.tracer.Visible=true
-                        d.tracer.From=Vector2.new(Cam.ViewportSize.X/2,
-                            Cam.ViewportSize.Y)
-                        d.tracer.To=hp2
-                    else d.tracer.Visible=false end
-                    local sp,on=w2s(anchor.Position)
-                    if S.EspArrow and not on then
-                        local dir=sp-camCenter
-                        if dir.Magnitude>0 then
-                            dir=dir.Unit
-                            local pos=camCenter+dir
-                                *math.min(Cam.ViewportSize.X,
-                                    Cam.ViewportSize.Y)*0.42
-                            local perp=Vector2.new(-dir.Y,dir.X)
-                            d.arrow.PointA=pos+dir*12
-                            d.arrow.PointB=pos-dir*6+perp*7
-                            d.arrow.PointC=pos-dir*6-perp*7
-                            d.arrow.Color=col d.arrow.Visible=true
+                local col=S.EspRainbow and rainbow() or S.EspCol
+                local headSP,headOn=Cam:WorldToViewportPoint(headPos)
+                local footSP,footOn=Cam:WorldToViewportPoint(
+                    hrpPos-Vector3.new(0,2.5,0))
+                local hV=Vector2.new(headSP.X,headSP.Y)
+                local fV=Vector2.new(footSP.X,footSP.Y)
+                local boxTop=Vector2.new(hV.X,hV.Y-8)
+                local boxBot=Vector2.new(fV.X,fV.Y+8)
+                local boxH=math.abs(boxBot.Y-boxTop.Y)
+                local boxW=boxH*0.5
+                local boxL=boxTop.X-boxW/2
+                local boxR=boxTop.X+boxW/2
+
+                if headOn then
+                    -- Box
+                    if S.EspBox then
+                        if S.EspBoxMode=="4 Góc" then
+                            d.bT.Visible=false d.bB.Visible=false
+                            d.bL.Visible=false d.bR.Visible=false
+                            local cH=boxH*0.2
+                            local cW=boxW*0.3
+                            -- 4 góc L-shape
+                            d.c1.From=Vector2.new(boxL,boxTop.Y)
+                            d.c1.To=Vector2.new(boxL+cW,boxTop.Y)
+                            d.c1.Color=col d.c1.Visible=true
+                            local e1=Vector2.new(boxL,boxTop.Y+cH)
+                            local l1=Vector2.new(boxL,boxTop.Y)
+                            -- Vẽ thêm cho 4 góc dùng 8 line -- dùng trick
+                            d.c2.From=Vector2.new(boxR-cW,boxTop.Y)
+                            d.c2.To=Vector2.new(boxR,boxTop.Y)
+                            d.c2.Color=col d.c2.Visible=true
+                            d.c3.From=Vector2.new(boxL,boxBot.Y-cH)
+                            d.c3.To=Vector2.new(boxL,boxBot.Y)
+                            d.c3.Color=col d.c3.Visible=true
+                            d.c4.From=Vector2.new(boxR,boxBot.Y-cH)
+                            d.c4.To=Vector2.new(boxR,boxBot.Y)
+                            d.c4.Color=col d.c4.Visible=true
+                        else
+                            d.c1.Visible=false d.c2.Visible=false
+                            d.c3.Visible=false d.c4.Visible=false
+                            d.bT.From=Vector2.new(boxL,boxTop.Y)
+                            d.bT.To=Vector2.new(boxR,boxTop.Y)
+                            d.bT.Color=col d.bT.Visible=true
+                            d.bB.From=Vector2.new(boxL,boxBot.Y)
+                            d.bB.To=Vector2.new(boxR,boxBot.Y)
+                            d.bB.Color=col d.bB.Visible=true
+                            d.bL.From=Vector2.new(boxL,boxTop.Y)
+                            d.bL.To=Vector2.new(boxL,boxBot.Y)
+                            d.bL.Color=col d.bL.Visible=true
+                            d.bR.From=Vector2.new(boxR,boxTop.Y)
+                            d.bR.To=Vector2.new(boxR,boxBot.Y)
+                            d.bR.Color=col d.bR.Visible=true
                         end
-                    else d.arrow.Visible=false end
-                    if S.EspSkel then
-                        for _,l in ipairs(d.skel) do l.Visible=false end
-                        local pairs2=nil
-                        if char:FindFirstChild("UpperTorso") then pairs2=R15
-                        elseif char:FindFirstChild("Torso") then pairs2=R6 end
-                        if pairs2 then
-                            for i,pair in ipairs(pairs2) do
-                                local a=char:FindFirstChild(pair[1])
-                                local b=char:FindFirstChild(pair[2])
-                                if a and b and d.skel[i] then
-                                    local ap,aon=w2s(a.Position)
-                                    local bp,bon=w2s(b.Position)
-                                    if aon and bon then
-                                        d.skel[i].From=ap
-                                        d.skel[i].To=bp
-                                        d.skel[i].Color=col
-                                        d.skel[i].Visible=true
-                                    end
+                    else
+                        d.bT.Visible=false d.bB.Visible=false
+                        d.bL.Visible=false d.bR.Visible=false
+                        d.c1.Visible=false d.c2.Visible=false
+                        d.c3.Visible=false d.c4.Visible=false
+                    end
+                    if S.EspName then
+                        d.name.Text=plr.Name
+                        d.name.Position=Vector2.new(boxTop.X,boxTop.Y-28)
+                        d.name.Color=col d.name.Visible=true
+                    else d.name.Visible=false end
+                    if S.EspDist then
+                        d.dist.Text=string.format("[%d m]",math.floor(dist))
+                        d.dist.Position=Vector2.new(boxTop.X,boxTop.Y-15)
+                        d.dist.Color=col d.dist.Visible=true
+                    else d.dist.Visible=false end
+                    if S.EspHP then
+                        local r=math.clamp(hum.Health/math.max(hum.MaxHealth,1),0,1)
+                        d.hpBg.From=Vector2.new(boxL-6,boxTop.Y)
+                        d.hpBg.To=Vector2.new(boxL-6,boxBot.Y)
+                        d.hpBg.Color=Color3.fromRGB(30,30,30)
+                        d.hpBg.Visible=true
+                        d.hpFill.From=Vector2.new(boxL-6,boxBot.Y-(boxBot.Y-boxTop.Y)*r)
+                        d.hpFill.To=Vector2.new(boxL-6,boxBot.Y)
+                        d.hpFill.Color=Color3.fromRGB(255*(1-r),255*r,0)
+                        d.hpFill.Visible=true
+                    else
+                        d.hpBg.Visible=false d.hpFill.Visible=false
+                    end
+                else
+                    d.bT.Visible=false d.bB.Visible=false
+                    d.bL.Visible=false d.bR.Visible=false
+                    d.c1.Visible=false d.c2.Visible=false
+                    d.c3.Visible=false d.c4.Visible=false
+                    d.name.Visible=false d.dist.Visible=false
+                    d.hpBg.Visible=false d.hpFill.Visible=false
+                end
+                if S.EspTracer then
+                    d.tracer.From=Vector2.new(Cam.ViewportSize.X/2,
+                        Cam.ViewportSize.Y)
+                    d.tracer.To=Vector2.new(headSP.X,headSP.Y)
+                    d.tracer.Color=col d.tracer.Visible=true
+                else d.tracer.Visible=false end
+                if S.EspArrow and not headOn then
+                    local dir=Vector2.new(headSP.X,headSP.Y)-camCenter
+                    if dir.Magnitude>0 then
+                        dir=dir.Unit
+                        local pos=camCenter+dir*math.min(
+                            Cam.ViewportSize.X,Cam.ViewportSize.Y)*0.42
+                        local perp=Vector2.new(-dir.Y,dir.X)
+                        d.arrow.PointA=pos+dir*12
+                        d.arrow.PointB=pos-dir*6+perp*7
+                        d.arrow.PointC=pos-dir*6-perp*7
+                        d.arrow.Color=col d.arrow.Visible=true
+                    end
+                else d.arrow.Visible=false end
+                if S.EspSkel then
+                    for _,l in ipairs(d.skel) do l.Visible=false end
+                    local pairs2=nil
+                    if char:FindFirstChild("UpperTorso") then pairs2=R15
+                    elseif char:FindFirstChild("Torso") then pairs2=R6 end
+                    if pairs2 then
+                        local idx=1
+                        for _,pair in ipairs(pairs2) do
+                            local a=char:FindFirstChild(pair[1])
+                            local b=char:FindFirstChild(pair[2])
+                            if a and b and d.skel[idx] then
+                                local ap,aon=Cam:WorldToViewportPoint(a.Position)
+                                local bp,bon=Cam:WorldToViewportPoint(b.Position)
+                                if aon and bon then
+                                    d.skel[idx].From=Vector2.new(ap.X,ap.Y)
+                                    d.skel[idx].To=Vector2.new(bp.X,bp.Y)
+                                    d.skel[idx].Color=col
+                                    d.skel[idx].Visible=true
                                 end
+                                idx=idx+1
                             end
                         end
+                    end
+                end
+                if d.ch then
+                    if S.EspChams then
+                        d.ch.FillColor=col d.ch.OutlineColor=col
+                        d.ch.FillTransparency=0.55
+                        d.ch.OutlineTransparency=0
+                    else
+                        d.ch.FillTransparency=1
+                        d.ch.OutlineTransparency=1
                     end
                 end
             end
         end
     end
 
+    -- Hit sound
     if S.HitSound and target then
         local sp,on=w2s(target.Position)
         if on and (sp-camCenter).Magnitude<15 then
             if not hitSnd.IsPlaying then hitSnd:Play() end
         end
     end
-
+    -- Speed
     if S.SpeedOn then
         local h=getHum()
         if h and h.WalkSpeed~=S.SpeedVal then h.WalkSpeed=S.SpeedVal end
@@ -1103,13 +1567,32 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
             end
         end
     end
+    -- Watermark update
     if S.WMOn then
         local fps=math.floor(1/math.max(dt,1e-4))
-        WM.Text=string.format("ONE SHOT v13 | %d FPS | Hook: %s | Mục Tiêu: %s",
-            fps,S.HookedMode and "ON" or "OFF",target and "✓" or "—")
+        WM.Text=string.format("⚡ ONE SHOT v14 | %d FPS | %s",
+            fps,target and "🎯 ✓" or "—")
+        if S.RainbowTheme then
+            WM.TextColor3=rainbow()
+            WMS.Color=rainbow(0.2)
+        else
+            WM.TextColor3=T.accent
+            WMS.Color=T.accent
+        end
+    end
+    -- Footer update mỗi 0.5s
+    if tick()-lastWM>0.5 then
+        lastWM=tick()
+        local fps=math.floor(1/math.max(dt,1e-4))
+        local ping=math.floor(LP:GetNetworkPing()*1000)
+        FooterText.Text=string.format(
+            "FPS: %d  |  Ping: %dms  |  Hook: %s  |  v14",
+            fps,ping,S.HookedMode and "ON" or "OFF")
+        FooterText.TextColor3=S.HookedMode and T.ok or T.textSub
     end
 end))
 
+-- Anti-Void
 table.insert(conns,RS.Heartbeat:Connect(function()
     if S.AntiVoid then
         local c=LP.Character
@@ -1120,33 +1603,13 @@ table.insert(conns,RS.Heartbeat:Connect(function()
     end
 end))
 
-table.insert(conns,UIS.JumpRequest:Connect(function()
-    if S.InfJump or S.Bunny then
-        local h=getHum()
-        if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end
-    end
-end))
-
-table.insert(conns,UIS.InputBegan:Connect(function(i,gp)
-    if gp then return end
-    if i.KeyCode==Enum.KeyCode.RightShift then
-        if Main.Visible then
-            Main.Visible=false Handle.Visible=true
-            Tween:Create(blur,TweenInfo.new(0.3),{Size=16}):Play()
-        else
-            Main.Visible=true Handle.Visible=false
-            Tween:Create(blur,TweenInfo.new(0.3),{Size=0}):Play()
-        end
-    end
-end))
-
 task.spawn(function()
     task.wait(1)
     if getWeaponManager() then
-        notify("One Shot v13","Đã tìm thấy WeaponManager!")
+        toast("One Shot v14","Đã tìm thấy WeaponManager!")
     else
-        notify("One Shot v13","Không có WeaponManager (dùng fallback aim camera)")
+        toast("One Shot v14","Không có WeaponManager (fallback aim camera)","warn")
     end
 end)
 
-notify("One Shot v13","Đã load! Vào tab Chiến Đấu → Bật Auto Shoot.")
+toast("One Shot v14","Đã load! RightShift = ẩn/hiện menu.")
