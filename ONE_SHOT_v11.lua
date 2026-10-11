@@ -645,6 +645,8 @@ local function newEsp(plr)
     local bg=Instance.new("BillboardGui")
     bg.Size=UDim2.new(0,200,0,60) bg.AlwaysOnTop=true
     bg.StudsOffsetWorldSpace=Vector3.new(0,3,0) bg.Parent=Gui
+    -- BillboardGui parented to ScreenGui must explicitly target a world part.
+    bg.Enabled=false
     local nameL=Instance.new("TextLabel",bg)
     nameL.Size=UDim2.new(1,0,0,16) nameL.Position=UDim2.new(0,0,0,0)
     nameL.BackgroundTransparency=1
@@ -683,10 +685,36 @@ local function newEsp(plr)
     end
     EspData[plr]={bg=bg,name=nameL,dist=distL,hp=hpFill,hpBG=hpBG,
         ch=ch,tracer=tracer,arrow=arrow,skel=skel}
+    -- Bind the billboard/highlight whenever the character spawns or respawns.
+    local data=EspData[plr]
+    local function bindCharacter(char)
+        if not data or not char then return end
+        local anchor=char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
+        if anchor then data.bg.Adornee=anchor end
+        data.ch.Parent=char
+    end
+    if plr.Character then bindCharacter(plr.Character) end
+    data.charAdded=plr.CharacterAdded:Connect(function(char)
+        data.bg.Enabled=false
+        task.spawn(function()
+            local anchor=char:WaitForChild("Head",5) or char:WaitForChild("HumanoidRootPart",5)
+            if anchor and EspData[plr]==data then
+                data.bg.Adornee=anchor
+                data.ch.Parent=char
+            end
+        end)
+    end)
+    data.charRemoving=plr.CharacterRemoving:Connect(function()
+        data.bg.Enabled=false
+        data.bg.Adornee=nil
+        data.ch.Parent=nil
+    end)
 end
 local function delEsp(plr)
     local d=EspData[plr]
     if d then
+        if d.charAdded then d.charAdded:Disconnect() end
+        if d.charRemoving then d.charRemoving:Disconnect() end
         if d.bg then d.bg:Destroy() end
         if d.ch then d.ch:Destroy() end
         if d.tracer then d.tracer:Remove() end
@@ -721,6 +749,8 @@ function unload()
     if flyLV then flyLV:Destroy() flyLV=nil end
     if flyAtt then flyAtt:Destroy() flyAtt=nil end
     for plr,d in pairs(EspData) do
+        if d.charAdded then d.charAdded:Disconnect() end
+        if d.charRemoving then d.charRemoving:Disconnect() end
         if d.bg then d.bg:Destroy() end
         if d.ch then d.ch:Destroy() end
         if d.tracer then d.tracer:Remove() end
@@ -960,10 +990,15 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
             local head=char:FindFirstChild("Head")
             local hrp=char:FindFirstChild("HumanoidRootPart")
             local hum=char:FindFirstChildOfClass("Humanoid")
-            if not head or not hrp or not hum then
+            local anchor=head or hrp
+            if not anchor or not hrp or not hum then
                 d.bg.Enabled=false
+                d.bg.Adornee=nil
             else
-                local dist=(Cam.CFrame.Position-head.Position).Magnitude
+                -- Refresh the target part every frame to recover from respawn/streaming.
+                if d.bg.Adornee~=anchor then d.bg.Adornee=anchor end
+                if d.ch.Parent~=char then d.ch.Parent=char end
+                local dist=(Cam.CFrame.Position-anchor.Position).Magnitude
                 if dist>S.EspMax then
                     d.bg.Enabled=false
                     d.tracer.Visible=false d.arrow.Visible=false
@@ -994,13 +1029,13 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
                         d.ch.FillTransparency=1 d.ch.OutlineTransparency=1
                     end
                     if S.EspTracer then
-                        local hp2=w2s(head.Position)
+                        local hp2=w2s(anchor.Position)
                         d.tracer.Color=col d.tracer.Visible=true
                         d.tracer.From=Vector2.new(Cam.ViewportSize.X/2,
                             Cam.ViewportSize.Y)
                         d.tracer.To=hp2
                     else d.tracer.Visible=false end
-                    local sp,on=w2s(head.Position)
+                    local sp,on=w2s(anchor.Position)
                     if S.EspArrow and not on then
                         local dir=sp-camCenter
                         if dir.Magnitude>0 then
