@@ -554,7 +554,7 @@ local function tgl(pg,t,d,cb)
     lbl.BackgroundTransparency=1
     lbl.Text=t
     lbl.TextColor3=T.text
-    lbl.Font=Enum.Font.Gotham lbL=lbL
+    lbl.Font=Enum.Font.Gotham
     lbl.Font=Enum.Font.Gotham lbl.TextSize=13
     lbl.TextXAlignment=Enum.TextXAlignment.Left
     local track=Instance.new("Frame",card)
