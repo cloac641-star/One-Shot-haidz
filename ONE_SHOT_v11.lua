@@ -1,8 +1,3 @@
---=============================================================
---  ONE SHOT v11 - Full Fixed Edition
---  Đã sửa: trùng lặp WeaponManager, applyWeaponMods, nút ×,
---  thứ tự unload, version đồng bộ
---=============================================================
 local Players=game:GetService("Players")
 local RS=game:GetService("RunService")
 local UIS=game:GetService("UserInputService")
@@ -20,7 +15,8 @@ AimOn=false,AimKey=Enum.KeyCode.E,AimMode="Giữ",AimPart="Đầu",
 AimSmooth=18,AimFOV=150,TeamCheck=false,WallCheck=true,
 Predict=0,ShowFOV=true,FOVRainbow=false,AimHeld=false,
 SilentAim=false,SnapShoot=true,SnapDur=12,SnapUntil=0,
-TargetPriority="Tâm Ngắm",AutoFireOnAim=false,TriggerBot=false,HitSound=false,
+TargetPriority="Tâm Ngắm",
+AutoShoot=false,TriggerBot=false,HitSound=false,
 Magic=false,MagicRate=8,FireRateBoost=false,
 EspOn=false,EspBox=false,EspName=true,EspDist=true,EspHP=true,
 EspTracer=false,EspSkel=false,EspChams=false,EspArrow=false,
@@ -29,12 +25,8 @@ SpeedOn=false,SpeedVal=32,JumpOn=false,JumpVal=80,InfJump=false,Bunny=false,
 FlyOn=false,FlySpd=80,Noclip=false,AntiVoid=false,
 FOVChg=false,FOVVal=90,FullBright=false,NoFog=false,RainbowChar=false,
 WMOn=true,Notify=true,CurTarget=nil}
-local CFG="oneshot_v11.json"
+local CFG="oneshot_v12.json"
 local conns={}
-
---=============================================================
--- 1. HÀM PHỤ TRỢ
---=============================================================
 local function notify(t,x,d)
     if not S.Notify then return end
     pcall(function()
@@ -82,9 +74,6 @@ local function partOf(char,which)
     else return char:FindFirstChild("Head") end
 end
 
---=============================================================
--- 2. WEAPON MANAGER + HOOK (định nghĩa 1 lần duy nhất)
---=============================================================
 local WeaponManager=nil
 local old_cast=nil
 local OriginalConstants={}
@@ -111,18 +100,22 @@ local function getWeaponManager()
 end
 
 local function hookCast()
-    if not hookfunction then return false end
+    if not hookfunction then
+        notify("Lỗi","Executor không hỗ trợ hookfunction!")
+        return false
+    end
     local wm=getWeaponManager()
-    if not wm or not wm.cast then return false end
+    if not wm or not wm.cast then
+        notify("Lỗi","Không tìm thấy WeaponManager.cast!")
+        return false
+    end
     if old_cast then return true end
     local ok=pcall(function()
-        old_cast=hookfunction(wm.cast,function(...)
-            local args={...}
+        old_cast=hookfunction(wm.cast,function(origin,direction,bullet_speed,max_distance,...)
             if S.Magic and S.CurTarget and S.CurTarget.Parent then
-                local origin=args[1]
                 local head=S.CurTarget
                 local canFire=true
-                if S.WallCheck and origin then
+                if S.WallCheck then
                     local ig={LP.Character}
                     local hit=WS:FindPartOnRayWithIgnoreList(
                         Ray.new(origin,head.Position-origin),ig)
@@ -130,13 +123,13 @@ local function hookCast()
                         canFire=false
                     end
                 end
-                if canFire and origin then
-                    args[2]=(head.Position-origin).Unit
-                    args[3]=9e9
-                    args[4]=9e999
+                if canFire then
+                    direction=(head.Position-origin).Unit
+                    bullet_speed=9e9
+                    max_distance=9e999
                 end
             end
-            return old_cast(table.unpack(args))
+            return old_cast(origin,direction,bullet_speed,max_distance,...)
         end)
     end)
     return ok
@@ -170,12 +163,8 @@ local function applyWeaponMods(on)
         end)
     end
 end
-
---=============================================================
--- 3. GIAO DIỆN
---=============================================================
 local Gui=Instance.new("ScreenGui")
-Gui.Name="OneShotV11"
+Gui.Name="OneShotV12"
 Gui.ResetOnSpawn=false
 Gui.ZIndexBehavior=Enum.ZIndexBehavior.Sibling
 Gui.IgnoreGuiInset=true
@@ -210,7 +199,7 @@ TitleBar.Size=UDim2.new(1,0,0,32)
 TitleBar.BackgroundTransparency=1 TitleBar.Active=true TitleBar.Parent=Main
 local tLbl=Instance.new("TextLabel")
 tLbl.Size=UDim2.new(1,-100,1,0) tLbl.Position=UDim2.new(0,12,0,0)
-tLbl.BackgroundTransparency=1 tLbl.Text="ONE SHOT v11"
+tLbl.BackgroundTransparency=1 tLbl.Text="ONE SHOT v12"
 tLbl.TextColor3=Color3.fromRGB(255,255,255) tLbl.Font=Enum.Font.GothamBold
 tLbl.TextSize=15 tLbl.TextXAlignment=Enum.TextXAlignment.Left tLbl.Parent=TitleBar
 
@@ -229,7 +218,6 @@ UIS.InputEnded:Connect(function(i)
     if isPress(i) then dragging=false end
 end)
 
--- Thanh handle mini
 local Handle=Instance.new("Frame")
 Handle.Size=UDim2.new(0,180,0,34)
 Handle.Position=UDim2.new(0.5,-90,0,4)
@@ -315,7 +303,6 @@ local function mkTab(n,o)
     end)
     table.insert(tabs,{bg=b}) newPage(n) return b
 end
-
 local function sec(pg,t)
     local l=Instance.new("TextLabel")
     l.Size=UDim2.new(1,0,0,22) l.BackgroundTransparency=1
@@ -464,17 +451,12 @@ local function kb(pg,t,d,cb)
     end)
     return f
 end
-
---=============================================================
--- 4. TABS
---=============================================================
 mkTab("Ngắm",1) mkTab("ESP",2) mkTab("Di Chuyển",3)
 mkTab("Chiến Đấu",4) mkTab("Hiển Thị",5) mkTab("Cấu Hình",6)
 selPage("Ngắm")
 tabs[1].bg.BackgroundColor3=Color3.fromRGB(0,170,255)
 tabs[1].bg.TextColor3=Color3.fromRGB(255,255,255)
 
--- TAB NGẮM
 local AP=Pages["Ngắm"]
 sec(AP,"NGẮM TỰ ĐỘNG")
 tgl(AP,"Bật Ngắm",false,function(v) S.AimOn=v end)
@@ -488,8 +470,16 @@ tgl(AP,"Bỏ Qua Đồng Đội",false,function(v) S.TeamCheck=v end)
 tgl(AP,"Kiểm Tra Tường",true,function(v) S.WallCheck=v end)
 sld(AP,"Dự Đoán x100",0,50,0,function(v) S.Predict=v end)
 sec(AP,"NÂNG CAO")
-tgl(AP,"Ngắm Ngầm",false,function(v) S.SilentAim=v end)
-tgl(AP,"Tự Bắn Khi Ngắm",false,function(v) S.AutoFireOnAim=v end)
+tgl(AP,"Ngắm Ngầm",false,function(v)
+    S.SilentAim=v
+    if v then
+        local ok=hookCast()
+        if ok then notify("Silent Aim","Đã hook WeaponManager!")
+        else notify("Silent Aim","Không hook được!") end
+    else
+        unhookCast()
+    end
+end)
 tgl(AP,"Khóa Khi Bắn",true,function(v) S.SnapShoot=v end)
 sld(AP,"Thời Gian Khóa x10ms",5,50,12,function(v) S.SnapDur=v end)
 tgl(AP,"Âm Trúng Đích",false,function(v) S.HitSound=v end)
@@ -501,7 +491,6 @@ local Fov=Drawing.new("Circle")
 Fov.Thickness=1.5 Fov.NumSides=64 Fov.Transparency=1
 Fov.Filled=false Fov.Visible=false
 
--- TAB ESP
 local EP=Pages["ESP"]
 sec(EP,"ESP")
 tgl(EP,"Bật ESP",false,function(v) S.EspOn=v end)
@@ -518,7 +507,6 @@ drp(EP,"Vị Trí",{"Trên","Giữa","Dưới"},"Trên",function(v) S.EspPos=v e
 tgl(EP,"Màu Cầu Vồng",false,function(v) S.EspRainbow=v end)
 sld(EP,"Khoảng Cách Tối Đa",100,5000,1500,function(v) S.EspMax=v end)
 
--- TAB DI CHUYỂN
 local MP=Pages["Di Chuyển"]
 sec(MP,"TỐC ĐỘ")
 tgl(MP,"Bật Tốc Độ",false,function(v)
@@ -542,7 +530,6 @@ sec(MP,"KHÁC")
 tgl(MP,"Xuyên Tường",false,function(v) S.Noclip=v end)
 tgl(MP,"Chống Rớt Map",false,function(v) S.AntiVoid=v end)
 
--- FLY logic
 local flyLV,flyAtt,flyConn
 local FK={W=false,A=false,S=false,D=false,SP=false,CT=false}
 function stopFly()
@@ -578,34 +565,29 @@ function startFly()
     end)
     notify("Bay","WASD di chuyển, Space lên, Ctrl xuống")
 end
-
--- TAB CHIẾN ĐẤU
 local CP=Pages["Chiến Đấu"]
 sec(CP,"TỰ ĐỘNG")
+tgl(CP,"Tự Bắn Khi Thấy (Auto Shoot)",false,function(v) S.AutoShoot=v end)
 tgl(CP,"Bắn Khi Thấy Tâm",false,function(v) S.TriggerBot=v end)
-sec(CP,"ĐẠN MA THUẬT (SILENT AIM)")
-tgl(CP,"Bật Đạn Ma Thuật",false,function(v)
-    S.Magic=v
-    if v then
-        local ok=hookCast()
-        if ok then
-            notify("Đạn Ma Thuật","Đã hook WeaponManager thành công!")
-        else
-            notify("Đạn Ma Thuật","Không hook được (executor không hỗ trợ hoặc không tìm thấy WM)")
-        end
-    else
-        unhookCast()
-    end
-end)
-sld(CP,"Tốc Độ Bắn x10ms",3,50,8,function(v) S.MagicRate=v end)
 sec(CP,"MOD SÚNG")
 tgl(CP,"Tăng Tốc Bắn + Vô Hạn Đạn",false,function(v)
     S.FireRateBoost=v
     applyWeaponMods(v)
     if v then notify("Mod Súng","Đã áp dụng (nếu game hỗ trợ)") end
 end)
+sec(CP,"SILENT AIM / ĐẠN MA THUẬT")
+tgl(CP,"Bật Silent Aim (Auto Head)",false,function(v)
+    S.Magic=v
+    if v then
+        local ok=hookCast()
+        if ok then notify("Silent Aim","Đã hook WeaponManager!")
+        else notify("Silent Aim","Không hook được!") end
+    else
+        unhookCast()
+    end
+end)
+sld(CP,"Tốc Độ Bắn x10ms",3,50,8,function(v) S.MagicRate=v end)
 
--- TAB HIỂN THỊ
 local VP=Pages["Hiển Thị"]
 sec(VP,"CAMERA")
 tgl(VP,"Đổi FOV",false,function(v)
@@ -637,15 +619,11 @@ sec(VP,"GIAO DIỆN")
 tgl(VP,"Watermark",true,function(v) S.WMOn=v WM.Visible=v end)
 tgl(VP,"Thông Báo",true,function(v) S.Notify=v end)
 
---=============================================================
--- 5. ESP STORAGE
---=============================================================
 local EspData={}
 local function newEsp(plr)
     local bg=Instance.new("BillboardGui")
     bg.Size=UDim2.new(0,200,0,60) bg.AlwaysOnTop=true
     bg.StudsOffsetWorldSpace=Vector3.new(0,3,0) bg.Parent=Gui
-    -- BillboardGui parented to ScreenGui must explicitly target a world part.
     bg.Enabled=false
     local nameL=Instance.new("TextLabel",bg)
     nameL.Size=UDim2.new(1,0,0,16) nameL.Position=UDim2.new(0,0,0,0)
@@ -685,7 +663,6 @@ local function newEsp(plr)
     end
     EspData[plr]={bg=bg,name=nameL,dist=distL,hp=hpFill,hpBG=hpBG,
         ch=ch,tracer=tracer,arrow=arrow,skel=skel}
-    -- Bind the billboard/highlight whenever the character spawns or respawns.
     local data=EspData[plr]
     local function bindCharacter(char)
         if not data or not char then return end
@@ -730,10 +707,6 @@ table.insert(conns,Players.PlayerAdded:Connect(function(p)
     if p~=LP then pcall(newEsp,p) end
 end))
 table.insert(conns,Players.PlayerRemoving:Connect(delEsp))
-
---=============================================================
--- 6. UNLOAD (định nghĩa TRƯỚC khi tạo nút ×)
---=============================================================
 function unload()
     unhookCast()
     applyWeaponMods(false)
@@ -765,10 +738,9 @@ function unload()
     conns={}
     if Gui then Gui:Destroy() end
     if blur then blur:Destroy() end
-    notify("One Shot v11","Đã gỡ script và khôi phục mặc định")
+    notify("One Shot v12","Đã gỡ script và khôi phục mặc định")
 end
 
--- Nút − và × (chỉ tạo 1 lần)
 local function cBtn(t,x,cb)
     local b=Instance.new("TextButton")
     b.Size=UDim2.new(0,24,0,24) b.Position=UDim2.new(1,x,0,4)
@@ -792,9 +764,6 @@ cBtn("−",-60,function()
 end)
 cBtn("×",-32,function() unload() end)
 
---=============================================================
--- 7. TAB CẤU HÌNH (sau khi đã có unload)
---=============================================================
 local CgP=Pages["Cấu Hình"]
 sec(CgP,"LƯU / TẢI")
 btn(CgP,"Lưu Cấu Hình",function()
@@ -820,66 +789,60 @@ btn(CgP,"Tải Cấu Hình",function()
 end)
 btn(CgP,"Gỡ Script",function() unload() end)
 
--- Watermark
 local WM=Instance.new("TextLabel")
 WM.Size=UDim2.new(0,280,0,26) WM.Position=UDim2.new(0,12,0,12)
 WM.BackgroundColor3=Color3.fromRGB(15,15,20)
 WM.BackgroundTransparency=0.3
 WM.TextColor3=Color3.fromRGB(0,170,255)
 WM.Font=Enum.Font.GothamBold WM.TextSize=13
-WM.Text="ONE SHOT v11" WM.Parent=Gui
+WM.Text="ONE SHOT v12" WM.Parent=Gui
 Instance.new("UICorner",WM).CornerRadius=UDim.new(0,6)
 local WMS=Instance.new("UIStroke",WM)
 WMS.Color=Color3.fromRGB(0,170,255) WMS.Transparency=0.3
-
---=============================================================
--- 8. VÒNG LẶP CHÍNH
---=============================================================
 local function getTarget()
     local best,bestScore=nil,math.huge
     local camPos=Cam.CFrame.Position
     local center=Vector2.new(Cam.ViewportSize.X/2,Cam.ViewportSize.Y/2)
     for _,p in ipairs(Players:GetPlayers()) do
-        if p~=LP and isAlive(p)
-        and not (S.TeamCheck and p.Team==LP.Team) then
+        if p~=LP and isAlive(p) then
+            if S.TeamCheck and p.Team==LP.Team then continue end
             local char=p.Character
+            if not char then continue end
             local hum=char:FindFirstChildOfClass("Humanoid")
-            if hum then
-                local part=partOf(char,S.AimPart)
-                if part then
-                    local sp,on=Cam:WorldToViewportPoint(part.Position)
-                    if on then
-                        local dCross=(Vector2.new(sp.X,sp.Y)-center).Magnitude
-                        if dCross<S.AimFOV then
-                            local score
-                            if S.TargetPriority=="Tâm Ngắm" then score=dCross
-                            elseif S.TargetPriority=="Khoảng Cách" then
-                                score=(camPos-part.Position).Magnitude
-                            else score=hum.Health end
-                            if score<bestScore then
-                                local ok=true
-                                if S.WallCheck and not isVis(part,{char}) then
-                                    ok=false
-                                end
-                                if ok then best=part bestScore=score end
-                            end
-                        end
-                    end
-                end
+            if not hum or hum.Health<=0 then continue end
+            local part=partOf(char,S.AimPart)
+            if not part then continue end
+            local sp,on=Cam:WorldToViewportPoint(part.Position)
+            if not on then continue end
+            local dCross=(Vector2.new(sp.X,sp.Y)-center).Magnitude
+            if dCross>S.AimFOV then continue end
+            local ok=true
+            if S.WallCheck and not isVis(part,{char}) then
+                ok=false
+            end
+            if not ok then continue end
+            local score
+            if S.TargetPriority=="Tâm Ngắm" then score=dCross
+            elseif S.TargetPriority=="Khoảng Cách" then
+                score=(camPos-part.Position).Magnitude
+            else score=hum.Health end
+            if score<bestScore then
+                best=part bestScore=score
             end
         end
     end
     return best
 end
 
--- Input
 table.insert(conns,UIS.InputBegan:Connect(function(i,gp)
     if gp then return end
     if i.KeyCode==S.AimKey then
         if S.AimMode=="Giữ" then S.AimHeld=true
         else S.AimHeld=not S.AimHeld end
     end
-    if i.UserInputType==Enum.UserInputType.MouseButton1 and S.SnapShoot then
+    if (i.UserInputType==Enum.UserInputType.MouseButton1
+        or i.UserInputType==Enum.UserInputType.Touch)
+        and S.SnapShoot then
         S.SnapUntil=tick()+S.SnapDur/100
     end
 end))
@@ -887,7 +850,6 @@ table.insert(conns,UIS.InputEnded:Connect(function(i)
     if i.KeyCode==S.AimKey and S.AimMode=="Giữ" then S.AimHeld=false end
 end))
 
--- Phím W/A/S/D cho fly
 table.insert(conns,UIS.InputBegan:Connect(function(i,gp)
     if gp then return end
     local k=i.KeyCode
@@ -933,13 +895,14 @@ local R15={{"Head","UpperTorso"},{"UpperTorso","LowerTorso"},
 {"UpperTorso","LeftUpperArm"},{"LeftUpperArm","LeftLowerArm"},{"LeftLowerArm","LeftHand"},
 {"UpperTorso","RightUpperArm"},{"RightUpperArm","RightLowerArm"},{"RightLowerArm","RightHand"},
 {"LowerTorso","LeftUpperLeg"},{"LeftUpperLeg","LeftLowerLeg"},{"LeftLowerLeg","LeftFoot"},
-{"LowerTorso","RightUpperLeg"},{"RightUpperLeg","RightLowerLeg"},{"RightUpperLeg","RightFoot"}}
+{"LowerTorso","RightUpperLeg"},{"RightUpperLeg","RightLowerLeg"},{"RightLowerLeg","RightFoot"}}
 local R6={{"Head","Torso"},{"Torso","Left Arm"},{"Torso","Right Arm"},
 {"Torso","Left Leg"},{"Torso","Right Leg"}}
 
 local lastMagic=0
+local lastAutoShoot=0
+
 table.insert(conns,RS.RenderStepped:Connect(function(dt)
-    -- Vòng ngắm
     if S.ShowFOV and S.AimOn then
         Fov.Visible=true
         Fov.Position=Vector2.new(Cam.ViewportSize.X/2,Cam.ViewportSize.Y/2)
@@ -953,7 +916,6 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
     local aiming=S.AimOn and (S.AimHeld or S.AimMode=="Bật Tắt")
     local snapping=tick()<S.SnapUntil
 
-    -- Aim thường
     if target and (aiming or snapping) and not S.Magic then
         local aimPos=target.Position
         if S.Predict>0 then
@@ -964,16 +926,24 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
             local alpha=1-math.exp(-(100/math.max(S.AimSmooth,1))*dt)
             Cam.CFrame=Cam.CFrame:Lerp(CFrame.new(Cam.CFrame.Position,aimPos),alpha)
         end
-        if S.AutoFireOnAim and aiming then fireTool() end
     end
 
-    -- Đạn ma thuật: hook đã cài, chỉ cần fire liên tục
-    if S.Magic and target and tick()-lastMagic>(S.MagicRate/100) then
-        lastMagic=tick()
-        fireTool()
+    if S.AutoShoot and target then
+        local now=tick()
+        if now-lastAutoShoot>(S.MagicRate/100) then
+            lastAutoShoot=now
+            fireTool()
+        end
     end
 
-    -- ESP
+    if S.Magic and target then
+        local now=tick()
+        if now-lastMagic>(S.MagicRate/100) then
+            lastMagic=now
+            fireTool()
+        end
+    end
+
     local camCenter=Vector2.new(Cam.ViewportSize.X/2,Cam.ViewportSize.Y/2)
     for plr,d in pairs(EspData) do
         local hide=not plr.Parent or not plr.Character
@@ -995,7 +965,6 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
                 d.bg.Enabled=false
                 d.bg.Adornee=nil
             else
-                -- Refresh the target part every frame to recover from respawn/streaming.
                 if d.bg.Adornee~=anchor then d.bg.Adornee=anchor end
                 if d.ch.Parent~=char then d.ch.Parent=char end
                 local dist=(Cam.CFrame.Position-anchor.Position).Magnitude
@@ -1077,7 +1046,6 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
         end
     end
 
-    -- Âm trúng đích
     if S.HitSound and target then
         local sp,on=w2s(target.Position)
         if on and (sp-camCenter).Magnitude<15 then
@@ -1085,19 +1053,16 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
         end
     end
 
-    -- Tốc độ
     if S.SpeedOn then
         local h=getHum()
         if h and h.WalkSpeed~=S.SpeedVal then h.WalkSpeed=S.SpeedVal end
     end
-    -- Nhảy
     if S.JumpOn then
         local h=getHum()
         if h and h.JumpPower~=S.JumpVal then
             h.UseJumpPower=true h.JumpPower=S.JumpVal
         end
     end
-    -- Xuyên tường
     if S.Noclip then
         local c=LP.Character
         if c then
@@ -1108,15 +1073,12 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
             end
         end
     end
-    -- Bay
     if S.FlyOn and not flyLV then startFly() end
     if not S.FlyOn and flyLV then stopFly() end
-    -- Trigger bot
     if S.TriggerBot and target then
         local sp=w2s(target.Position)
         if (sp-camCenter).Magnitude<12 then sendM1() end
     end
-    -- Nhân vật cầu vồng
     if S.RainbowChar then
         local c=LP.Character
         if c then
@@ -1127,15 +1089,13 @@ table.insert(conns,RS.RenderStepped:Connect(function(dt)
             end
         end
     end
-    -- Watermark
     if S.WMOn then
         local fps=math.floor(1/math.max(dt,1e-4))
-        WM.Text=string.format("ONE SHOT v11 | %d FPS | Mục Tiêu: %s",
+        WM.Text=string.format("ONE SHOT v12 | %d FPS | Mục Tiêu: %s",
             fps,target and "✓" or "—")
     end
 end))
 
--- Chống rớt map
 table.insert(conns,RS.Heartbeat:Connect(function()
     if S.AntiVoid then
         local c=LP.Character
@@ -1146,7 +1106,6 @@ table.insert(conns,RS.Heartbeat:Connect(function()
     end
 end))
 
--- Nhảy vô hạn / bunny
 table.insert(conns,UIS.JumpRequest:Connect(function()
     if S.InfJump or S.Bunny then
         local h=getHum()
@@ -1154,7 +1113,6 @@ table.insert(conns,UIS.JumpRequest:Connect(function()
     end
 end))
 
--- Phím tắt RightShift
 table.insert(conns,UIS.InputBegan:Connect(function(i,gp)
     if gp then return end
     if i.KeyCode==Enum.KeyCode.RightShift then
@@ -1168,14 +1126,13 @@ table.insert(conns,UIS.InputBegan:Connect(function(i,gp)
     end
 end))
 
--- Auto tìm WeaponManager
 task.spawn(function()
     task.wait(1)
     if getWeaponManager() then
-        notify("One Shot v11","Đã tìm thấy WeaponManager!")
+        notify("One Shot v12","Đã tìm thấy WeaponManager!")
     else
-        notify("One Shot v11","Không tìm thấy WeaponManager (chỉ ảnh hưởng Đạn Ma Thuật)")
+        notify("One Shot v12","Không tìm thấy WeaponManager (chỉ ảnh hưởng Silent Aim)")
     end
 end)
 
-notify("One Shot v11","Đã load! RightShift = ẩn/hiện. Nhấn × để gỡ và reset.")
+notify("One Shot v12","Đã load! RightShift = ẩn/hiện.")
